@@ -68,13 +68,19 @@ export const AppProvider = ({ children }) => {
   // Toast Notifications
   const [notifications, setNotifications] = useState([])
 
+  const dismissNotification = (id) => {
+    setNotifications(prev => prev.filter(n => n.id !== id))
+  }
+
   const notify = (title, message, type = 'success') => {
     const id = Date.now() + Math.random()
-    setNotifications(prev => [...prev, { id, title, message, type }])
+    // Keep max 2 active notifications to keep screen clean
+    setNotifications(prev => [...prev.slice(-1), { id, title, message, type }])
     setTimeout(() => {
       setNotifications(prev => prev.filter(n => n.id !== id))
-    }, 4500)
+    }, 2800)
   }
+
 
   // Persist to local storage
   useEffect(() => {
@@ -751,6 +757,7 @@ export const AppProvider = ({ children }) => {
         syncMessage,
         notifications,
         notify,
+        dismissNotification,
         syncWithSupabase,
         pushAllLocalDataToSupabase,
         addMedicineWithBatch,
