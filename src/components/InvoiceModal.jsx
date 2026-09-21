@@ -26,9 +26,9 @@ export const InvoiceModal = () => {
         
         {/* Modal Top Bar (Hidden in Print) */}
         <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center justify-between no-print">
-          <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-teal-600 text-white flex items-center justify-center font-bold shadow-xs">
-              <FileText className="w-4 h-4" />
+          <div className="flex items-center gap-2.5">
+            <div className="w-10 h-10 rounded-xl bg-white border border-teal-200 p-0.5 flex items-center justify-center shadow-xs">
+              <img src="/rvs-logo.png" alt="RVS Logo" className="w-full h-full object-contain rounded-lg" />
             </div>
             <div>
               <h3 className="text-sm font-extrabold text-slate-900">Clinical Cash Receipt / Invoice</h3>
@@ -59,18 +59,23 @@ export const InvoiceModal = () => {
           {/* Hospital / Store Header */}
           <div className="border-b-2 border-teal-700 pb-4 flex items-start justify-between">
             <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-teal-700 flex items-center justify-center text-white font-black text-sm">
-                  RVS
+              <div className="flex items-center gap-3">
+                <div className="w-14 h-14 rounded-2xl bg-white border border-teal-200 p-0.5 flex items-center justify-center shadow-xs shrink-0">
+                  <img src="/rvs-logo.png" alt="RVS Hospital Seal" className="w-full h-full object-contain rounded-xl" />
                 </div>
-                <h1 className="text-xl font-black tracking-tight text-slate-900">
-                  RVS MEDICAL STORE & HOSPITAL PHARMACY
-                </h1>
+                <div>
+                  <h1 className="text-xl font-black tracking-tight text-slate-900 leading-tight">
+                    RVS MEDICAL STORE & HOSPITAL PHARMACY
+                  </h1>
+                  <p className="text-xs text-slate-600 font-semibold">
+                    RVS University & Multi-Speciality Medical Center
+                  </p>
+                </div>
               </div>
-              <p className="text-xs text-slate-600 font-medium">
+              <p className="text-xs text-slate-600 font-medium pl-0.5">
                 24x7 Multi-Speciality Hospital Complex • Ground Floor Pharmacy Wing
               </p>
-              <p className="text-[11px] text-slate-500 font-mono">
+              <p className="text-[11px] text-slate-500 font-mono pl-0.5">
                 DL No: KA-BNG-12984-20B/21B • GSTIN: 29RVSMD9988H1Z4 • Emergency: +91 80 2345 6789
               </p>
             </div>

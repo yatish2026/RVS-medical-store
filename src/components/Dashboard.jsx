@@ -20,7 +20,7 @@ import {
   Sparkles
 } from 'lucide-react'
 
-export const Dashboard = ({ onOpenMedicineModal, onOpenPatientModal, onOpenBatchModal }) => {
+export const Dashboard = ({ onOpenMedicineModal, onOpenPatientModal, onOpenBatchModal, onOpenRevenueAnalytics }) => {
   const {
     medicines,
     batches,
@@ -53,34 +53,47 @@ export const Dashboard = ({ onOpenMedicineModal, onOpenPatientModal, onOpenBatch
         <div className="absolute right-0 top-0 w-96 h-96 bg-white/10 rounded-full blur-2xl pointer-events-none -mr-20 -mt-20"></div>
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 border border-white/20 text-white text-xs font-semibold backdrop-blur-xs">
-              <span className="w-2 h-2 rounded-full bg-emerald-300 animate-pulse"></span>
-              RVS Hospital & Medical Center • Dispensary Terminal
+          <div className="flex items-start gap-4">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white/15 p-1.5 backdrop-blur-md border border-white/25 shadow-md shrink-0 flex items-center justify-center">
+              <img src="/rvs-logo.png" alt="RVS Seal" className="w-full h-full object-contain rounded-xl drop-shadow-sm" />
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-              Pharmacy Operations & Real-Time Stock Hub
-            </h1>
-            <p className="text-teal-50 text-sm max-w-2xl leading-relaxed">
-              Real-time monitoring of <strong className="text-white font-bold">{medicines.length} formulations</strong> across <strong className="text-white font-bold">{batches.length} active batches</strong> with automated expiry reminders and high-speed billing.
-            </p>
+
+            <div className="space-y-1.5">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 border border-white/20 text-white text-xs font-semibold backdrop-blur-xs">
+                <span className="w-2 h-2 rounded-full bg-emerald-300 animate-pulse"></span>
+                RVS Hospital & Medical Center • Central Pharmacy
+              </div>
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-white leading-tight">
+                Pharmacy Operations & Real-Time Stock Hub
+              </h1>
+              <p className="text-teal-50 text-xs sm:text-sm max-w-2xl leading-relaxed">
+                Real-time monitoring of <strong className="text-white font-bold">{medicines.length} formulations</strong> across <strong className="text-white font-bold">{batches.length} active batches</strong> with automated expiry reminders and high-speed billing.
+              </p>
+            </div>
           </div>
 
           {/* Quick Actions */}
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
             <button
               onClick={() => setActiveTab('pos')}
-              className="flex items-center gap-2 bg-white hover:bg-slate-50 text-teal-900 font-extrabold px-5 py-3 rounded-xl text-xs sm:text-sm shadow-md active:scale-95 transition-all cursor-pointer"
+              className="flex items-center gap-2 bg-white hover:bg-slate-50 text-teal-900 font-extrabold px-4 sm:px-5 py-3 rounded-xl text-xs sm:text-sm shadow-md active:scale-95 transition-all cursor-pointer"
             >
               <ShoppingCart className="w-4 h-4 text-teal-700" />
               <span>Launch Billing</span>
             </button>
             <button
+              onClick={onOpenRevenueAnalytics}
+              className="flex items-center gap-2 bg-teal-900/70 hover:bg-teal-900 text-white font-bold px-4 py-3 rounded-xl text-xs sm:text-sm border border-teal-400/40 active:scale-95 transition-all cursor-pointer"
+            >
+              <TrendingUp className="w-4 h-4 text-emerald-300" />
+              <span>Day-Wise Sales</span>
+            </button>
+            <button
               onClick={onOpenMedicineModal}
-              className="flex items-center gap-2 bg-teal-800/60 hover:bg-teal-800/90 text-white font-bold px-4 py-3 rounded-xl text-xs sm:text-sm border border-teal-500/40 active:scale-95 transition-all"
+              className="flex items-center gap-2 bg-teal-800/60 hover:bg-teal-800/90 text-white font-bold px-4 py-3 rounded-xl text-xs sm:text-sm border border-teal-500/40 active:scale-95 transition-all cursor-pointer"
             >
               <Plus className="w-4 h-4 text-white" />
-              <span>+ Add Medicine & Expiry</span>
+              <span>+ Add Medicine</span>
             </button>
           </div>
         </div>
@@ -89,24 +102,34 @@ export const Dashboard = ({ onOpenMedicineModal, onOpenPatientModal, onOpenBatch
       {/* 4 Primary Clinical KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
         
-        {/* KPI 1: Sales / Revenue */}
-        <div className="clinical-card p-5 rounded-2xl">
+        {/* KPI 1: Sales / Revenue (Clickable to open day-wise breakdown) */}
+        <div
+          onClick={onOpenRevenueAnalytics}
+          className="clinical-card p-5 rounded-2xl cursor-pointer hover:border-teal-400 hover:shadow-md transition-all group"
+          title="Click to view day-wise revenue analytics"
+        >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Today's Revenue</span>
-            <div className="w-10 h-10 rounded-xl bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-700">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider group-hover:text-teal-700 transition-colors">
+              Today's Revenue
+            </span>
+            <div className="w-10 h-10 rounded-xl bg-teal-50 group-hover:bg-teal-600 group-hover:text-white border border-teal-200 flex items-center justify-center text-teal-700 transition-colors">
               <TrendingUp className="w-5 h-5" />
             </div>
           </div>
           <div className="mt-3">
-            <div className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+            <div className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight group-hover:text-teal-900 transition-colors">
               ₹{todayRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
-            <div className="flex items-center gap-2 mt-2 text-xs text-slate-500 font-medium">
-              <span className="text-emerald-700 font-bold flex items-center">
+            <div className="flex items-center justify-between gap-2 mt-2 text-xs font-medium">
+              <span className="text-emerald-700 font-bold flex items-center gap-1">
                 <ArrowUpRight className="w-3.5 h-3.5" />
-                {todaysSales.length} bills today
+                {todaysSales.length} bill{todaysSales.length !== 1 ? 's' : ''} today
               </span>
-              <span>• Total: ₹{totalSalesRevenue.toFixed(0)}</span>
+              <span className="text-slate-500 font-mono">Total: ₹{totalSalesRevenue.toFixed(0)}</span>
+            </div>
+            <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-teal-700 font-bold">
+              <span>View Day-Wise Breakdown</span>
+              <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
             </div>
           </div>
         </div>
@@ -330,12 +353,21 @@ export const Dashboard = ({ onOpenMedicineModal, onOpenPatientModal, onOpenBatch
                   <p className="text-xs text-slate-500">Latest pharmacy transactions</p>
                 </div>
               </div>
-              <button
-                onClick={() => setActiveTab('pos')}
-                className="text-xs text-teal-700 hover:text-teal-900 font-bold"
-              >
-                + New Sale
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={onOpenRevenueAnalytics}
+                  className="text-xs text-teal-700 hover:text-teal-900 font-bold"
+                >
+                  Day-Wise History
+                </button>
+                <span className="text-slate-300">|</span>
+                <button
+                  onClick={() => setActiveTab('pos')}
+                  className="text-xs text-teal-700 hover:text-teal-900 font-bold"
+                >
+                  + New Bill
+                </button>
+              </div>
             </div>
 
             <div className="space-y-2.5">
@@ -358,6 +390,15 @@ export const Dashboard = ({ onOpenMedicineModal, onOpenPatientModal, onOpenBatch
                 </div>
               ))}
             </div>
+
+            {sales.length > 0 && (
+              <button
+                onClick={onOpenRevenueAnalytics}
+                className="w-full mt-3 py-2 text-center text-xs font-bold text-teal-800 bg-teal-50/80 hover:bg-teal-100 border border-teal-200 rounded-xl transition-colors cursor-pointer"
+              >
+                View Full Day-Wise Sales History ➔
+              </button>
+            )}
           </div>
 
           {/* Hospital Department Drug Requisitions */}

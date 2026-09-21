@@ -49,15 +49,15 @@ export const Header = ({ onOpenMedicineModal, onOpenPatientModal, onToggleMobile
               className="flex items-center gap-2.5 cursor-pointer select-none"
               onClick={() => setActiveTab('dashboard')}
             >
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-teal-600 to-cyan-500 flex items-center justify-center shadow-md shadow-teal-500/20 ring-2 ring-teal-100 shrink-0">
-                <Activity className="w-5 h-5 sm:w-6 sm:h-6 text-white font-black" />
+              <div className="w-10 h-10 rounded-xl bg-white border border-teal-200/80 p-0.5 flex items-center justify-center shadow-md shadow-teal-500/10 ring-2 ring-teal-100 shrink-0">
+                <img src="/rvs-logo.png" alt="RVS Seal" className="w-full h-full object-contain rounded-lg" />
               </div>
               <div>
                 <div className="flex items-center gap-1.5 sm:gap-2">
                   <span className="font-extrabold text-base sm:text-lg tracking-tight bg-gradient-to-r from-teal-700 via-cyan-700 to-teal-800 bg-clip-text text-transparent">
                     RVS MEDICAL
                   </span>
-                  <span className="hidden sm:inline-block text-[10px] uppercase font-bold tracking-wider bg-teal-50 text-teal-700 border border-teal-200 px-2 py-0.5 rounded-full">
+                  <span className="hidden sm:inline-block text-[10px] uppercase font-bold tracking-wider bg-teal-50 text-teal-700 border border-teal-200 px-2 py-0.5 rounded-full font-mono">
                     Pharmacy
                   </span>
                 </div>
@@ -121,8 +121,8 @@ export const Header = ({ onOpenMedicineModal, onOpenPatientModal, onToggleMobile
 
             {/* Pharmacist Profile Badge */}
             <div className="flex items-center gap-2 bg-slate-100/80 border border-slate-200 p-1 sm:px-3 sm:py-1 rounded-xl">
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-teal-600 text-white flex items-center justify-center font-extrabold text-xs shadow-xs">
-                RVS
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white border border-teal-200 p-0.5 flex items-center justify-center shadow-xs shrink-0">
+                <img src="/rvs-logo.png" alt="RVS Seal" className="w-full h-full object-contain rounded-md" />
               </div>
               <div className="hidden xl:block text-left">
                 <div className="text-xs font-extrabold text-slate-800 leading-tight">Chief Pharmacist</div>

@@ -100,9 +100,9 @@ export const Sidebar = ({ isOpen, onClose }) => {
         <div>
           {/* Mobile Drawer Header */}
           <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-100 lg:hidden">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-teal-600 text-white flex items-center justify-center font-black text-xs shadow-xs">
-                RVS
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-white border border-teal-200 p-0.5 flex items-center justify-center shadow-xs">
+                <img src="/rvs-logo.png" alt="RVS Logo" className="w-full h-full object-contain rounded-lg" />
               </div>
               <div>
                 <h4 className="font-extrabold text-sm text-slate-900 leading-tight">RVS Pharmacy</h4>

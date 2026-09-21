@@ -16,6 +16,7 @@ import { MedicineModal } from './components/MedicineModal'
 import { PatientModal } from './components/PatientModal'
 import { RequisitionModal } from './components/RequisitionModal'
 import { SupplierModal } from './components/SupplierModal'
+import { RevenueAnalyticsModal } from './components/RevenueAnalyticsModal'
 
 export function App() {
   const { activeTab } = useApp()
@@ -31,6 +32,7 @@ export function App() {
   const [isPatientModalOpen, setIsPatientModalOpen] = useState(false)
   const [isRequisitionModalOpen, setIsRequisitionModalOpen] = useState(false)
   const [isSupplierModalOpen, setIsSupplierModalOpen] = useState(false)
+  const [isRevenueModalOpen, setIsRevenueModalOpen] = useState(false)
 
   // Handlers for Medicine & Batch modals
   const handleOpenNewMedicine = () => {
@@ -85,6 +87,7 @@ export function App() {
               onOpenMedicineModal={handleOpenNewMedicine}
               onOpenPatientModal={() => setIsPatientModalOpen(true)}
               onOpenBatchModal={handleOpenBatchModal}
+              onOpenRevenueAnalytics={() => setIsRevenueModalOpen(true)}
             />
           )}
 
@@ -119,6 +122,10 @@ export function App() {
 
       {/* Global Modals & Toasts */}
       <InvoiceModal />
+      <RevenueAnalyticsModal
+        isOpen={isRevenueModalOpen}
+        onClose={() => setIsRevenueModalOpen(false)}
+      />
       <MedicineModal
         isOpen={isMedicineModalOpen}
         onClose={() => setIsMedicineModalOpen(false)}
