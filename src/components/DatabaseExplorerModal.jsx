@@ -11,23 +11,83 @@ import {
   CheckCircle2,
   AlertCircle
 } from 'lucide-react'
+import { useApp } from '../context/AppContext'
 import { apiGetDbStats, apiGetDbTable } from '../lib/api'
 
 export const DatabaseExplorerModal = ({ isOpen, onClose }) => {
+  const {
+    users = [],
+    medicines = [],
+    batches = [],
+    patients = [],
+    sales = [],
+    discountPolicy,
+    backendConnected
+  } = useApp()
+
   const [stats, setStats] = useState(null)
-  const [selectedTable, setSelectedTable] = useState('users')
+  const [selectedTable, setSelectedTable] = useState('medicines')
   const [tableData, setTableData] = useState(null)
   const [loadingStats, setLoadingStats] = useState(false)
   const [loadingTable, setLoadingTable] = useState(false)
   const [viewMode, setViewMode] = useState('table') // 'table' | 'json'
 
+  const computeLocalFallbackStats = () => {
+    const totalRecs =
+      (users?.length || 0) +
+      (medicines?.length || 0) +
+      (batches?.length || 0) +
+      (patients?.length || 0) +
+      (sales?.length || 0) +
+      1
+
+    return {
+      engine: backendConnected ? 'SQLite 3 (Disk)' : 'SQLite Local Mode (Standby)',
+      total_records: totalRecs,
+      file_size_kb: 'Active',
+      tables: [
+        { name: 'medicines', count: medicines?.length || 0 },
+        { name: 'batches', count: batches?.length || 0 },
+        { name: 'patients', count: patients?.length || 0 },
+        { name: 'sales', count: sales?.length || 0 },
+        { name: 'users', count: users?.length || 0 },
+        { name: 'clinical_discount_policy', count: 1 }
+      ],
+      is_local: !backendConnected
+    }
+  }
+
+  const getLocalTableRows = (tableName) => {
+    if (tableName === 'medicines') return medicines || []
+    if (tableName === 'batches') return batches || []
+    if (tableName === 'patients') return patients || []
+    if (tableName === 'sales') return sales || []
+    if (tableName === 'users') return users || []
+    if (tableName === 'clinical_discount_policy') {
+      return [discountPolicy || { discount_percent: 10, authorized_by: 'Medical Director', reason: 'Default OPD' }]
+    }
+    if (tableName === 'sale_items') {
+      return (sales || []).flatMap((s) => (s.items || []).map((it) => ({ sale_id: s.id, ...it })))
+    }
+    return []
+  }
+
   const fetchStats = async () => {
     try {
       setLoadingStats(true)
       const data = await apiGetDbStats()
-      setStats(data)
+      if (data && data.tables) {
+        // Filter out removed modules (suppliers and hospital_requisitions)
+        const filteredTables = data.tables.filter(
+          (t) => t.name !== 'suppliers' && t.name !== 'hospital_requisitions'
+        )
+        setStats({ ...data, tables: filteredTables })
+      } else {
+        setStats(computeLocalFallbackStats())
+      }
     } catch (err) {
-      console.error('Failed to load DB stats', err)
+      // Backend offline or 503 - seamlessly fall back to local store
+      setStats(computeLocalFallbackStats())
     } finally {
       setLoadingStats(false)
     }
@@ -37,10 +97,26 @@ export const DatabaseExplorerModal = ({ isOpen, onClose }) => {
     try {
       setLoadingTable(true)
       const data = await apiGetDbTable(tableName)
-      setTableData(data)
+      if (data && Array.isArray(data.rows)) {
+        setTableData(data)
+      } else {
+        const rows = getLocalTableRows(tableName)
+        setTableData({
+          table: tableName,
+          total_rows: rows.length,
+          rows,
+          is_local_fallback: true
+        })
+      }
     } catch (err) {
-      console.error(`Failed to load table ${tableName}`, err)
-      setTableData(null)
+      // Backend offline or 503 - provide local data with zero crashes
+      const rows = getLocalTableRows(tableName)
+      setTableData({
+        table: tableName,
+        total_rows: rows.length,
+        rows,
+        is_local_fallback: true
+      })
     } finally {
       setLoadingTable(false)
     }
@@ -61,11 +137,12 @@ export const DatabaseExplorerModal = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null
 
-  const columns = tableData?.rows?.length > 0 ? Object.keys(tableData.rows[0]) : []
+  const safeRows = Array.isArray(tableData?.rows) ? tableData.rows : []
+  const columns = safeRows.length > 0 ? Object.keys(safeRows[0]) : []
 
   const handleDownloadBackup = () => {
-    if (!tableData) return
-    const blob = new Blob([JSON.stringify(tableData.rows, null, 2)], { type: 'application/json' })
+    if (safeRows.length === 0) return
+    const blob = new Blob([JSON.stringify(safeRows, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -73,6 +150,18 @@ export const DatabaseExplorerModal = ({ isOpen, onClose }) => {
     a.click()
     URL.revokeObjectURL(url)
   }
+
+  const tableList =
+    stats?.tables && stats.tables.length > 0
+      ? stats.tables
+      : [
+          { name: 'medicines', count: medicines.length },
+          { name: 'batches', count: batches.length },
+          { name: 'patients', count: patients.length },
+          { name: 'sales', count: sales.length },
+          { name: 'users', count: users.length },
+          { name: 'clinical_discount_policy', count: 1 }
+        ]
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
@@ -87,13 +176,20 @@ export const DatabaseExplorerModal = ({ isOpen, onClose }) => {
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-black tracking-tight text-white">Live SQLite Database Explorer</h2>
-                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1 font-mono">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
-                  Connected
-                </span>
+                {tableData?.is_local_fallback ? (
+                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1 font-mono">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                    Local Store (Flask Offline)
+                  </span>
+                ) : (
+                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1 font-mono">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                    Connected to SQLite
+                  </span>
+                )}
               </div>
               <p className="text-xs text-slate-300 font-mono mt-0.5">
-                File: <span className="text-teal-300">pythonanywhere/hospital.db</span> (Persistent Storage on Disk)
+                Storage: <span className="text-teal-300">pythonanywhere/hospital.db</span> (Persistent SQLite on Disk)
               </p>
             </div>
           </div>
@@ -112,6 +208,7 @@ export const DatabaseExplorerModal = ({ isOpen, onClose }) => {
               <span className="hidden sm:inline">Refresh</span>
             </button>
             <button
+              id="db-explorer-close-x"
               onClick={onClose}
               className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer"
             >
@@ -124,7 +221,12 @@ export const DatabaseExplorerModal = ({ isOpen, onClose }) => {
         <div className="px-6 py-2.5 bg-blue-50/90 border-b border-blue-100 flex items-start gap-2.5 text-xs text-blue-900 shrink-0">
           <AlertCircle className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
           <div className="leading-relaxed">
-            <span className="font-bold">Why isn't this in the PythonAnywhere "Databases" tab?</span> PythonAnywhere's "Databases" tab is strictly reserved for paid cloud MySQL servers. Your system runs on <strong>SQLite 3</strong>, which is 100% free, saved permanently on disk inside the <code className="bg-blue-100 px-1 py-0.5 rounded font-mono text-blue-800">Files</code> tab (<code className="bg-blue-100 px-1 py-0.5 rounded font-mono text-blue-800">/home/yatish/RVS-medical-store/pythonanywhere/hospital.db</code>), and requires $0 to run forever.
+            <span className="font-bold">Persistent Storage:</span> Your system runs on{' '}
+            <strong>SQLite 3</strong>, which is 100% free, saved permanently on disk inside{' '}
+            <code className="bg-blue-100 px-1 py-0.5 rounded font-mono text-blue-800">
+              pythonanywhere/hospital.db
+            </code>
+            . When developing locally without Flask running, all records are safely rendered from your local state without errors.
           </div>
         </div>
 
@@ -134,7 +236,7 @@ export const DatabaseExplorerModal = ({ isOpen, onClose }) => {
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Database Engine</span>
             <span className="text-xs font-bold text-slate-800 flex items-center gap-1 mt-0.5">
               <HardDrive className="w-3.5 h-3.5 text-teal-600" />
-              SQLite 3 File DB
+              {stats?.engine || 'SQLite 3 File DB'}
             </span>
           </div>
 
@@ -146,16 +248,16 @@ export const DatabaseExplorerModal = ({ isOpen, onClose }) => {
           </div>
 
           <div className="bg-white p-2.5 rounded-xl border border-slate-200">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Database Size</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Storage Status</span>
             <span className="text-xs font-bold text-slate-800 mt-0.5 block font-mono">
               {stats?.file_size_kb ? `${stats.file_size_kb} KB` : 'Active'}
             </span>
           </div>
 
           <div className="bg-white p-2.5 rounded-xl border border-slate-200">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Tables</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Tables</span>
             <span className="text-xs font-bold text-teal-700 mt-0.5 block font-mono">
-              {stats?.tables?.length || 9} Tables Registered
+              {tableList.length} Tables Registered
             </span>
           </div>
         </div>
@@ -168,17 +270,7 @@ export const DatabaseExplorerModal = ({ isOpen, onClose }) => {
             <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-2 py-1 hidden md:block">
               Database Tables
             </span>
-            {(stats?.tables || [
-              { name: 'users', count: 4 },
-              { name: 'medicines', count: 0 },
-              { name: 'batches', count: 0 },
-              { name: 'patients', count: 0 },
-              { name: 'suppliers', count: 0 },
-              { name: 'hospital_requisitions', count: 0 },
-              { name: 'sales', count: 0 },
-              { name: 'sale_items', count: 0 },
-              { name: 'clinical_discount_policy', count: 1 }
-            ]).map((tbl) => (
+            {tableList.map((tbl) => (
               <button
                 key={tbl.name}
                 onClick={() => setSelectedTable(tbl.name)}
@@ -192,9 +284,11 @@ export const DatabaseExplorerModal = ({ isOpen, onClose }) => {
                   <TableIcon className="w-3.5 h-3.5 shrink-0 opacity-80" />
                   <span className="truncate capitalize">{tbl.name.replace(/_/g, ' ')}</span>
                 </div>
-                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold shrink-0 ml-1.5 ${
-                  selectedTable === tbl.name ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
-                }`}>
+                <span
+                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold shrink-0 ml-1.5 ${
+                    selectedTable === tbl.name ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+                  }`}
+                >
                   {tbl.count ?? 0}
                 </span>
               </button>
@@ -211,7 +305,7 @@ export const DatabaseExplorerModal = ({ isOpen, onClose }) => {
                   Table: <span className="text-teal-700 font-mono">{selectedTable}</span>
                 </span>
                 <span className="text-xs text-slate-400">
-                  ({tableData?.rows?.length || 0} rows loaded)
+                  ({safeRows.length} rows)
                 </span>
               </div>
 
@@ -239,7 +333,7 @@ export const DatabaseExplorerModal = ({ isOpen, onClose }) => {
                 {/* Export Button */}
                 <button
                   onClick={handleDownloadBackup}
-                  disabled={!tableData?.rows?.length}
+                  disabled={safeRows.length === 0}
                   className="flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg border border-slate-200 transition-colors disabled:opacity-40 cursor-pointer"
                 >
                   <Download className="w-3.5 h-3.5 text-slate-600" />
@@ -253,9 +347,9 @@ export const DatabaseExplorerModal = ({ isOpen, onClose }) => {
               {loadingTable ? (
                 <div className="flex flex-col items-center justify-center h-48 gap-3 text-slate-400">
                   <RefreshCw className="w-6 h-6 animate-spin text-teal-600" />
-                  <span className="text-xs font-bold">Querying SQLite database...</span>
+                  <span className="text-xs font-bold">Querying database...</span>
                 </div>
-              ) : tableData?.rows?.length === 0 ? (
+              ) : safeRows.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-48 text-center p-6 text-slate-400">
                   <Database className="w-10 h-10 text-slate-300 mb-2 stroke-1" />
                   <p className="text-sm font-bold text-slate-600">Table is currently empty</p>
@@ -276,7 +370,7 @@ export const DatabaseExplorerModal = ({ isOpen, onClose }) => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 font-sans">
-                      {tableData.rows.map((row, idx) => (
+                      {safeRows.map((row, idx) => (
                         <tr key={idx} className="hover:bg-teal-50/40 transition-colors">
                           {columns.map((col) => (
                             <td key={col} className="px-3.5 py-2 whitespace-nowrap font-mono text-[11px] text-slate-800">
@@ -292,7 +386,7 @@ export const DatabaseExplorerModal = ({ isOpen, onClose }) => {
                 </div>
               ) : (
                 <pre className="bg-slate-900 text-teal-300 p-4 rounded-xl text-xs font-mono overflow-auto max-h-[50vh] border border-slate-800">
-                  {JSON.stringify(tableData?.rows, null, 2)}
+                  {JSON.stringify(safeRows, null, 2)}
                 </pre>
               )}
             </div>
@@ -308,6 +402,7 @@ export const DatabaseExplorerModal = ({ isOpen, onClose }) => {
             <span>SQLite active on PythonAnywhere. Changes persist immediately to disk.</span>
           </div>
           <button
+            id="db-explorer-close-btn"
             onClick={onClose}
             className="px-4 py-1.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer"
           >

@@ -6,8 +6,6 @@ import {
   ShoppingCart,
   Hourglass,
   Users,
-  Building,
-  Truck,
   X,
   PhoneCall,
   ShieldCheck
@@ -21,7 +19,6 @@ export const Sidebar = ({ isOpen, onClose }) => {
     expiredCount,
     criticalExpiryCount,
     cart,
-    requisitions,
     currentUser,
     currentRole,
     canManageUsers,
@@ -31,7 +28,6 @@ export const Sidebar = ({ isOpen, onClose }) => {
   } = useApp()
 
   const totalExpiryAlerts = expiredCount + criticalExpiryCount
-  const pendingRequisitions = requisitions.filter(r => r.status === 'Requested' || r.priority === 'Emergency').length
 
   // Navigation Items with Role-Based Access Controls
   const navItems = [
@@ -72,21 +68,6 @@ export const Sidebar = ({ isOpen, onClose }) => {
       icon: Users,
       badge: null,
       color: 'text-sky-600'
-    },
-    {
-      id: 'wards',
-      label: 'Hospital Wards & ER',
-      icon: Building,
-      badge: pendingRequisitions > 0 ? `${pendingRequisitions} ER` : null,
-      badgeColor: 'bg-rose-100 text-rose-800 border-rose-300 font-bold',
-      color: 'text-indigo-600'
-    },
-    {
-      id: 'suppliers',
-      label: 'Suppliers & Orders',
-      icon: Truck,
-      badge: null,
-      color: 'text-purple-600'
     }
   ]
 

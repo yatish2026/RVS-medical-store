@@ -178,6 +178,7 @@ export const Header = ({ onOpenMedicineModal, onOpenPatientModal, onOpenPdfModal
 
             {/* Database Explorer Button */}
             <button
+              id="database-explorer-btn"
               onClick={() => setIsDbExplorerOpen(true)}
               title="Inspect Live SQLite Database (hospital.db)"
               className="flex items-center gap-1.5 bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200/80 px-2.5 sm:px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer"

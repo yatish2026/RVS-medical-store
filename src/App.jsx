@@ -8,14 +8,10 @@ import { Inventory } from './components/Inventory'
 import { POSBilling } from './components/POSBilling'
 import { ExpiryTracker } from './components/ExpiryTracker'
 import { Patients } from './components/Patients'
-import { HospitalWards } from './components/HospitalWards'
-import { Suppliers } from './components/Suppliers'
 import { ToastContainer } from './components/ToastContainer'
 import { InvoiceModal } from './components/InvoiceModal'
 import { MedicineModal } from './components/MedicineModal'
 import { PatientModal } from './components/PatientModal'
-import { RequisitionModal } from './components/RequisitionModal'
-import { SupplierModal } from './components/SupplierModal'
 import { RevenueAnalyticsModal } from './components/RevenueAnalyticsModal'
 import { AuthModal } from './components/AuthModal'
 import { UserManagementModal } from './components/UserManagementModal'
@@ -43,8 +39,6 @@ export function App() {
   const [targetMedForBatch, setTargetMedForBatch] = useState(null)
 
   const [isPatientModalOpen, setIsPatientModalOpen] = useState(false)
-  const [isRequisitionModalOpen, setIsRequisitionModalOpen] = useState(false)
-  const [isSupplierModalOpen, setIsSupplierModalOpen] = useState(false)
   const [isRevenueModalOpen, setIsRevenueModalOpen] = useState(false)
 
   // Handlers for Medicine & Batch modals
@@ -131,14 +125,6 @@ export function App() {
           {activeTab === 'patients' && (
             <Patients onOpenPatientModal={() => setIsPatientModalOpen(true)} />
           )}
-
-          {activeTab === 'wards' && (
-            <HospitalWards onOpenRequisitionModal={() => setIsRequisitionModalOpen(true)} />
-          )}
-
-          {activeTab === 'suppliers' && (
-            <Suppliers onOpenSupplierModal={() => setIsSupplierModalOpen(true)} />
-          )}
         </main>
       </div>
 
@@ -160,14 +146,6 @@ export function App() {
       <PatientModal
         isOpen={isPatientModalOpen}
         onClose={() => setIsPatientModalOpen(false)}
-      />
-      <RequisitionModal
-        isOpen={isRequisitionModalOpen}
-        onClose={() => setIsRequisitionModalOpen(false)}
-      />
-      <SupplierModal
-        isOpen={isSupplierModalOpen}
-        onClose={() => setIsSupplierModalOpen(false)}
       />
       <AuthModal />
       <UserManagementModal />

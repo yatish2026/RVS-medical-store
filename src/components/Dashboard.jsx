@@ -10,7 +10,6 @@ import {
   ArrowUpRight,
   Pill,
   Users,
-  Building,
   CheckCircle2,
   Clock,
   Printer,
@@ -26,7 +25,6 @@ export const Dashboard = ({ onOpenMedicineModal, onOpenPatientModal, onOpenBatch
     batches,
     sales,
     patients,
-    requisitions,
     lowStockItems,
     expiringBatches,
     expiredCount,
@@ -405,48 +403,64 @@ export const Dashboard = ({ onOpenMedicineModal, onOpenPatientModal, onOpenBatch
             )}
           </div>
 
-          {/* Hospital Department Drug Requisitions */}
+          {/* Quick Clinical Shortcuts Card */}
           <div className="clinical-card rounded-2xl p-5">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-700">
-                  <Building className="w-4 h-4" />
+                <div className="w-8 h-8 rounded-lg bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-700">
+                  <Sparkles className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-extrabold text-slate-900">Ward Emergency Feed</h3>
-                  <p className="text-xs text-slate-500">ICU, ER & In-Patient Drug Issues</p>
+                  <h3 className="text-sm font-extrabold text-slate-900">Dispensary Shortcuts</h3>
+                  <p className="text-xs text-slate-500">Quick clinical workflows</p>
                 </div>
               </div>
-              <button
-                onClick={() => setActiveTab('wards')}
-                className="text-xs text-teal-700 hover:text-teal-900 font-bold"
-              >
-                Manage
-              </button>
             </div>
 
-            <div className="space-y-2.5">
-              {requisitions.slice(0, 3).map((req) => (
-                <div key={req.id} className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-xs">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-bold text-slate-900">{req.department}</span>
-                    <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                        req.priority === 'Emergency'
-                          ? 'bg-rose-50 text-rose-700 border-rose-200'
-                          : 'bg-teal-50 text-teal-700 border-teal-200'
-                      }`}
-                    >
-                      {req.priority}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-600 mt-0.5">{req.notes}</p>
-                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-200 text-[10px] text-slate-500 font-mono">
-                    <span>Bed: {req.bed_no}</span>
-                    <span className="text-teal-700 font-bold">{req.status}</span>
-                  </div>
+            <div className="grid grid-cols-2 gap-2.5">
+              <button
+                onClick={() => setActiveTab('pos')}
+                className="p-3 rounded-xl bg-slate-50 hover:bg-teal-50 border border-slate-200/80 hover:border-teal-300 transition-all text-left group cursor-pointer"
+              >
+                <div className="w-7 h-7 rounded-lg bg-cyan-100/80 text-cyan-700 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+                  <ShoppingCart className="w-3.5 h-3.5" />
                 </div>
-              ))}
+                <div className="font-bold text-xs text-slate-900">Billing Counter</div>
+                <p className="text-[10px] text-slate-500 mt-0.5">Fast POS & UPI</p>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('inventory')}
+                className="p-3 rounded-xl bg-slate-50 hover:bg-teal-50 border border-slate-200/80 hover:border-teal-300 transition-all text-left group cursor-pointer"
+              >
+                <div className="w-7 h-7 rounded-lg bg-teal-100/80 text-teal-700 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+                  <Pill className="w-3.5 h-3.5" />
+                </div>
+                <div className="font-bold text-xs text-slate-900">Formulary Stock</div>
+                <p className="text-[10px] text-slate-500 mt-0.5">{medicines.length} Medicines</p>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('expiry')}
+                className="p-3 rounded-xl bg-slate-50 hover:bg-rose-50 border border-slate-200/80 hover:border-rose-300 transition-all text-left group cursor-pointer"
+              >
+                <div className="w-7 h-7 rounded-lg bg-rose-100/80 text-rose-700 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+                  <Hourglass className="w-3.5 h-3.5" />
+                </div>
+                <div className="font-bold text-xs text-slate-900">Expiry Radar</div>
+                <p className="text-[10px] text-slate-500 mt-0.5">{expiredCount + criticalExpiryCount} Alerts</p>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('patients')}
+                className="p-3 rounded-xl bg-slate-50 hover:bg-sky-50 border border-slate-200/80 hover:border-sky-300 transition-all text-left group cursor-pointer"
+              >
+                <div className="w-7 h-7 rounded-lg bg-sky-100/80 text-sky-700 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+                  <Users className="w-3.5 h-3.5" />
+                </div>
+                <div className="font-bold text-xs text-slate-900">OPD Patients</div>
+                <p className="text-[10px] text-slate-500 mt-0.5">{patients.length} Registered</p>
+              </button>
             </div>
           </div>
 

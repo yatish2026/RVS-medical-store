@@ -57,7 +57,7 @@ export const MedicineModal = ({ isOpen, onClose, initialData = null, targetMedic
   }
 
   useEffect(() => {
-    const defaultSupplier = suppliers[0]?.company_name || 'Apollo Pharma Distributors'
+    const defaultSupplier = suppliers?.[0]?.company_name || 'Apollo Pharma Distributors'
 
     if (initialData) {
       setMedForm(initialData)
@@ -397,7 +397,7 @@ export const MedicineModal = ({ isOpen, onClose, initialData = null, targetMedic
                     onChange={(e) => setBatchForm({ ...batchForm, supplier_name: e.target.value })}
                     className="w-full bg-white border border-slate-300 focus:border-teal-600 rounded-xl px-3 py-2 text-sm text-slate-900 outline-none cursor-pointer font-medium"
                   >
-                    {suppliers.map(s => (
+                    {(suppliers || []).map(s => (
                       <option key={s.id} value={s.company_name}>{s.company_name}</option>
                     ))}
                     <option value="Direct Hospital Purchase">Direct Hospital Purchase</option>
