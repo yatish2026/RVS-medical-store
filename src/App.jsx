@@ -21,6 +21,7 @@ import { AuthModal } from './components/AuthModal'
 import { UserManagementModal } from './components/UserManagementModal'
 import { LoginPage } from './components/LoginPage'
 import { DatabaseExplorerModal } from './components/DatabaseExplorerModal'
+import { PdfImportModal } from './components/PdfImportModal'
 
 export function App() {
   const {
@@ -35,9 +36,9 @@ export function App() {
   // Mobile drawer state
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
-
   // Modal States
   const [isMedicineModalOpen, setIsMedicineModalOpen] = useState(false)
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false)
   const [editingMedicine, setEditingMedicine] = useState(null)
   const [targetMedForBatch, setTargetMedForBatch] = useState(null)
 
@@ -81,6 +82,7 @@ export function App() {
       <Header
         onOpenMedicineModal={handleOpenNewMedicine}
         onOpenPatientModal={() => setIsPatientModalOpen(true)}
+        onOpenPdfModal={() => setIsPdfModalOpen(true)}
         onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         isMobileMenuOpen={isMobileMenuOpen}
       />
@@ -116,6 +118,7 @@ export function App() {
           {activeTab === 'inventory' && (
             <Inventory
               onOpenMedicineModal={handleOpenNewMedicine}
+              onOpenPdfModal={() => setIsPdfModalOpen(true)}
               onOpenBatchModal={handleOpenBatchModal}
               onEditMedicine={handleEditMedicine}
             />
@@ -171,6 +174,10 @@ export function App() {
       <DatabaseExplorerModal
         isOpen={isDbExplorerOpen}
         onClose={() => setIsDbExplorerOpen(false)}
+      />
+      <PdfImportModal
+        isOpen={isPdfModalOpen}
+        onClose={() => setIsPdfModalOpen(false)}
       />
       <ToastContainer />
     </div>

@@ -8,13 +8,13 @@ import {
   X,
   AlertTriangle,
   Clock,
-  User,
   ShieldCheck,
   Database,
-  LogOut
+  LogOut,
+  FileUp
 } from 'lucide-react'
 
-export const Header = ({ onOpenMedicineModal, onOpenPatientModal, onToggleMobileMenu, isMobileMenuOpen }) => {
+export const Header = ({ onOpenMedicineModal, onOpenPatientModal, onOpenPdfModal, onToggleMobileMenu, isMobileMenuOpen }) => {
   const {
     setActiveTab,
     cart,
@@ -122,14 +122,25 @@ export const Header = ({ onOpenMedicineModal, onOpenPatientModal, onToggleMobile
 
             {/* Quick Action: Add Med (Desktop/Tablet) - Hidden for Read-Only Supervisor */}
             {canAddMedicine && (
-              <button
-                onClick={onOpenMedicineModal}
-                className="hidden sm:flex items-center gap-1.5 bg-slate-100 hover:bg-teal-50 text-slate-700 hover:text-teal-800 px-3 py-2 rounded-xl text-xs font-bold border border-slate-200 hover:border-teal-200 transition-colors cursor-pointer"
-              >
-                <Plus className="w-4 h-4 text-teal-600" />
-                <span className="hidden md:inline">+ New Medicine</span>
-                <span className="md:hidden">+ Med</span>
-              </button>
+              <>
+                <button
+                  onClick={onOpenPdfModal}
+                  title="Upload Doctor Prescription / Wholesale PDF to auto-add medicines"
+                  className="hidden md:flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 hover:text-indigo-800 px-3 py-2 rounded-xl text-xs font-bold border border-indigo-200 transition-colors cursor-pointer"
+                >
+                  <FileUp className="w-4 h-4 text-indigo-600" />
+                  <span>Upload PDF</span>
+                </button>
+
+                <button
+                  onClick={onOpenMedicineModal}
+                  className="hidden sm:flex items-center gap-1.5 bg-slate-100 hover:bg-teal-50 text-slate-700 hover:text-teal-800 px-3 py-2 rounded-xl text-xs font-bold border border-slate-200 hover:border-teal-200 transition-colors cursor-pointer"
+                >
+                  <Plus className="w-4 h-4 text-teal-600" />
+                  <span className="hidden md:inline">+ New Medicine</span>
+                  <span className="md:hidden">+ Med</span>
+                </button>
+              </>
             )}
 
             {/* Super Admin: User Management Button */}

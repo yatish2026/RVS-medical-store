@@ -18,10 +18,11 @@ import {
   Edit2,
   Trash2,
   PackagePlus,
-  Info
+  Info,
+  FileUp
 } from 'lucide-react'
 
-export const Inventory = ({ onOpenMedicineModal, onOpenBatchModal, onEditMedicine }) => {
+export const Inventory = ({ onOpenMedicineModal, onOpenBatchModal, onEditMedicine, onOpenPdfModal }) => {
   const {
     medicines,
     batches,
@@ -75,13 +76,24 @@ export const Inventory = ({ onOpenMedicineModal, onOpenBatchModal, onEditMedicin
 
         <div className="flex items-center gap-2.5">
           {canAddMedicine ? (
-            <button
-              onClick={onOpenMedicineModal}
-              className="flex items-center gap-2 bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-500 hover:to-teal-600 text-white font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm shadow-md shadow-teal-700/15 active:scale-95 transition-all cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>+ Add Medicine & Expiry</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onOpenPdfModal}
+                className="flex items-center gap-1.5 sm:gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 font-bold px-3.5 py-2.5 rounded-xl text-xs sm:text-sm border border-indigo-200 shadow-xs transition-all cursor-pointer"
+                title="Extract medicine and batch details directly from PDF prescription or inward invoice"
+              >
+                <FileUp className="w-4 h-4 text-indigo-600" />
+                <span>Upload PDF / Prescription</span>
+              </button>
+
+              <button
+                onClick={onOpenMedicineModal}
+                className="flex items-center gap-2 bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-500 hover:to-teal-600 text-white font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm shadow-md shadow-teal-700/15 active:scale-95 transition-all cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>+ Add Medicine & Expiry</span>
+              </button>
+            </div>
           ) : (
             <div className="px-3.5 py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold font-mono">
               Audit Mode (Read-Only)
