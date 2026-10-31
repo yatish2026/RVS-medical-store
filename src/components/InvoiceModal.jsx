@@ -162,8 +162,8 @@ export const InvoiceModal = () => {
                 </div>
               )}
               <div className="flex justify-between text-slate-600">
-                <span>GST (CGST+SGST):</span>
-                <span>+₹{activeInvoice.tax_amount.toFixed(2)}</span>
+                <span>{activeInvoice.tax_amount > 0 ? 'GST (CGST+SGST):' : 'GST Status:'}</span>
+                <span>{activeInvoice.tax_amount > 0 ? `+₹${activeInvoice.tax_amount.toFixed(2)}` : '₹0.00 (Exempt)'}</span>
               </div>
               <div className="flex justify-between pt-2 border-t border-slate-400 font-black text-base text-slate-950">
                 <span>Net Total:</span>

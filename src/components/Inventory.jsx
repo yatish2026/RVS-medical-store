@@ -186,6 +186,12 @@ export const Inventory = ({ onOpenMedicineModal, onOpenBatchModal, onEditMedicin
                                 {med.strength}
                               </span>
                             )}
+                            {(Number(med.default_discount_percent) > 0 || Number(med.discount_percent) > 0) && (
+                              <span className="text-[10px] font-mono font-extrabold text-emerald-800 bg-emerald-50 border border-emerald-300 px-1.5 py-0.2 rounded flex items-center gap-1">
+                                <Sparkles className="w-2.5 h-2.5 text-emerald-600" />
+                                {med.default_discount_percent || med.discount_percent}% MO Disc
+                              </span>
+                            )}
                           </div>
                           <div className="text-xs text-slate-500 mt-0.5 max-w-xs truncate" title={med.generic_name}>
                             {med.generic_name}
@@ -264,11 +270,11 @@ export const Inventory = ({ onOpenMedicineModal, onOpenBatchModal, onEditMedicin
                                 </button>
                               )}
 
-                              {/* Edit */}
+                              {/* Edit (MO and Super Admin) */}
                               {canEdit && (
                                 <button
                                   onClick={() => onEditMedicine(med)}
-                                  title="Edit medicine details"
+                                  title="Edit medicine details, MRP, selling price, stock & MO discount"
                                   className="p-2 rounded-lg bg-slate-100 hover:bg-cyan-50 text-slate-600 hover:text-cyan-800 border border-slate-200 hover:border-cyan-200 transition-colors cursor-pointer"
                                 >
                                   <Edit2 className="w-4 h-4" />

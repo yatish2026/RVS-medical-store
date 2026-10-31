@@ -50,6 +50,8 @@ export const POSBilling = () => {
     cartDiscountAmount,
     cartTaxAmount,
     cartGrandTotal,
+    isGstActive,
+    setIsGstActive,
     completeSale,
     setActiveInvoice,
     currentUser,
@@ -284,9 +286,17 @@ export const POSBilling = () => {
                   >
                     <div>
                       <div className="flex items-start justify-between gap-2">
-                        <h4 className="font-extrabold text-sm text-slate-900 group-hover:text-teal-800 transition-colors">
-                          {med.name}
-                        </h4>
+                        <div>
+                          <h4 className="font-extrabold text-sm text-slate-900 group-hover:text-teal-800 transition-colors">
+                            {med.name}
+                          </h4>
+                          {(Number(med.default_discount_percent) > 0 || Number(med.discount_percent) > 0) && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-mono font-extrabold px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 mt-1">
+                              <Sparkles className="w-2.5 h-2.5 text-emerald-600" />
+                              {med.default_discount_percent || med.discount_percent}% MO Pre-Approved Disc
+                            </span>
+                          )}
+                        </div>
                         <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 shrink-0">
                           {med.dosage_form}
                         </span>
@@ -450,10 +460,22 @@ export const POSBilling = () => {
                       className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 gap-2 sm:gap-3"
                     >
                       <div className="min-w-0 flex-1">
-                        <h5 className="font-extrabold text-xs text-slate-900 truncate">{item.medicine_name}</h5>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <h5 className="font-extrabold text-xs text-slate-900 truncate">{item.medicine_name}</h5>
+                          {item.discount_percent > 0 && (
+                            <span className="bg-emerald-100 text-emerald-800 text-[9px] font-mono font-extrabold px-1.5 py-0.2 rounded border border-emerald-300">
+                              -{item.discount_percent}% MO
+                            </span>
+                          )}
+                        </div>
                         <div className="text-[10px] text-slate-500 font-mono flex items-center gap-1.5 sm:gap-2">
                           <span>Batch: {item.batch_number}</span>
                           <span>• ₹{item.unit_price}</span>
+                          {item.discount_percent > 0 && (
+                            <span className="text-emerald-700 font-bold">
+                              (Net: ₹{(item.unit_price * (1 - item.discount_percent / 100)).toFixed(2)})
+                            </span>
+                          )}
                         </div>
                       </div>
 
@@ -592,10 +614,57 @@ export const POSBilling = () => {
                     </div>
                   )}
 
-                  {/* GST */}
+                  {/* GST Activation / Stop GST Toggle */}
+                  <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/90 flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-1.5 font-bold text-xs text-slate-800">
+                        <span className={`w-2 h-2 rounded-full ${isGstActive ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+                        <span>GST in Bill: {isGstActive ? 'Active' : 'Stopped (0% Exempt)'}</span>
+                      </div>
+                      <span className="text-[10px] text-slate-500">
+                        {isGstActive ? 'Standard GST applied to taxable items' : 'Non-tax bill / GST exempt patient'}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-slate-200 shadow-2xs">
+                      <button
+                        type="button"
+                        onClick={() => setIsGstActive(true)}
+                        className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+                          isGstActive
+                            ? 'bg-emerald-600 text-white shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                        }`}
+                      >
+                        + Add GST
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsGstActive(false)}
+                        className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+                          !isGstActive
+                            ? 'bg-amber-600 text-white shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                        }`}
+                      >
+                        Stop GST (0%)
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* GST Line Item */}
                   <div className="flex justify-between text-slate-600 font-mono">
-                    <span>GST (CGST + SGST):</span>
-                    <span>+₹{cartTaxAmount.toFixed(2)}</span>
+                    <span className="flex items-center gap-1.5">
+                      <span>GST (CGST + SGST):</span>
+                      {!isGstActive && (
+                        <span className="text-[9px] font-sans font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-800">
+                          Stopped / Exempt
+                        </span>
+                      )}
+                    </span>
+                    <span className={isGstActive ? 'text-slate-800 font-bold' : 'text-slate-400 line-through'}>
+                      {isGstActive ? `+₹${cartTaxAmount.toFixed(2)}` : '₹0.00'}
+                    </span>
                   </div>
 
                   {/* Grand Total */}

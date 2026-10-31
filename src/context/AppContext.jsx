@@ -122,6 +122,16 @@ export const AppProvider = ({ children }) => {
   })
   const [activeInvoice, setActiveInvoice] = useState(null)
 
+  // GST Activation Toggle (Active vs Stop GST / 0% Tax Exempt)
+  const [isGstActive, setIsGstActive] = useState(() => {
+    const saved = localStorage.getItem('rvs_is_gst_active')
+    return saved !== null ? JSON.parse(saved) : true
+  })
+
+  useEffect(() => {
+    localStorage.setItem('rvs_is_gst_active', JSON.stringify(isGstActive))
+  }, [isGstActive])
+
   // PythonAnywhere Flask API & MySQL Connection Status
   const [backendConnected, setBackendConnected] = useState(false)
   const [backendSyncing, setBackendSyncing] = useState(false)
@@ -468,13 +478,50 @@ export const AppProvider = ({ children }) => {
     return { medicine: newMed, batch: newBatch }
   }
 
-  // Edit Medicine
-  const updateMedicine = async (id, medData) => {
-    setMedicines(prev => prev.map(m => m.id === id ? { ...m, ...medData } : m))
+  // Edit Medicine & Pricing / Stock
+  const updateMedicine = async (id, medData, batchData) => {
+    const cleanMedData = {
+      ...medData,
+      default_discount_percent: parseFloat(medData.default_discount_percent) || 0
+    }
+    setMedicines(prev => prev.map(m => m.id === id ? { ...m, ...cleanMedData } : m))
+
+    if (batchData) {
+      setBatches(prev => {
+        const batchIdx = prev.findIndex(b => b.medicine_id === id)
+        if (batchIdx >= 0) {
+          const next = [...prev]
+          next[batchIdx] = {
+            ...next[batchIdx],
+            mrp: batchData.mrp !== undefined && !isNaN(parseFloat(batchData.mrp)) ? parseFloat(batchData.mrp) : next[batchIdx].mrp,
+            selling_price: batchData.selling_price !== undefined && !isNaN(parseFloat(batchData.selling_price)) ? parseFloat(batchData.selling_price) : parseFloat(batchData.mrp) || next[batchIdx].selling_price,
+            cost_price: batchData.cost_price !== undefined && !isNaN(parseFloat(batchData.cost_price)) ? parseFloat(batchData.cost_price) : next[batchIdx].cost_price,
+            current_stock: batchData.current_stock !== undefined && !isNaN(parseInt(batchData.current_stock, 10)) ? parseInt(batchData.current_stock, 10) : next[batchIdx].current_stock,
+            batch_number: batchData.batch_number ? batchData.batch_number.trim() : next[batchIdx].batch_number,
+            expiry_date: batchData.expiry_date ? batchData.expiry_date.trim() : next[batchIdx].expiry_date
+          }
+          return next
+        } else {
+          const newB = {
+            id: generateUUID(),
+            medicine_id: id,
+            batch_number: batchData.batch_number || `BAT-${Math.floor(1000 + Math.random() * 9000)}`,
+            expiry_date: batchData.expiry_date || '2028-12-31',
+            cost_price: parseFloat(batchData.cost_price) || 0,
+            mrp: parseFloat(batchData.mrp) || 0,
+            selling_price: parseFloat(batchData.selling_price) || parseFloat(batchData.mrp) || 0,
+            current_stock: parseInt(batchData.current_stock, 10) || 0,
+            supplier_name: batchData.supplier_name || 'Standard Vendor'
+          }
+          return [newB, ...prev]
+        }
+      })
+    }
+
     try {
-      await apiUpdateMedicine(id, medData)
+      await apiUpdateMedicine(id, cleanMedData)
     } catch (e) {}
-    notify('Formulary Updated', `Medicine details updated.`, 'success')
+    notify('Formulary & Pricing Saved', `${medData.name || 'Medicine'} details, pricing & MO discount updated successfully.`, 'success')
   }
 
   // Delete Medicine
@@ -592,6 +639,7 @@ export const AppProvider = ({ children }) => {
 
   // --- POS CART ACTIONS ---
   const addToCart = (medicine, batch, qty = 1) => {
+    const medDiscount = parseFloat(medicine.default_discount_percent ?? medicine.discount_percent ?? 0)
     const existing = cart.find(item => item.batch_id === batch.id)
     if (existing) {
       const maxAvailable = batch.current_stock
@@ -618,18 +666,20 @@ export const AppProvider = ({ children }) => {
           generic_name: medicine.generic_name,
           category: medicine.category,
           dosage_form: medicine.dosage_form,
-          gst_rate: medicine.gst_rate || 12,
+          gst_rate: medicine.gst_rate !== undefined ? medicine.gst_rate : 12,
           batch_id: batch.id,
           batch_number: batch.batch_number,
           expiry_date: batch.expiry_date,
           unit_price: batch.selling_price || batch.mrp,
           mrp: batch.mrp,
+          discount_percent: medDiscount,
           quantity: qty,
           total_price: qty * (batch.selling_price || batch.mrp)
         }
       ])
     }
-    notify('Item Added', `${medicine.name} (Batch: ${batch.batch_number}) added to billing.`, 'info')
+    const discountMsg = medDiscount > 0 ? ` (${medDiscount}% MO Pre-Approved Discount applied)` : ''
+    notify('Item Added', `${medicine.name} (Batch: ${batch.batch_number}) added to billing${discountMsg}.`, 'info')
   }
 
   const updateCartQty = (batchId, quantity) => {
@@ -664,11 +714,26 @@ export const AppProvider = ({ children }) => {
 
   // Calculate POS Totals
   const cartSubtotal = cart.reduce((acc, item) => acc + item.total_price, 0)
-  const cartDiscountAmount = (cartSubtotal * discountPercent) / 100
-  const cartTaxAmount = cart.reduce((acc, item) => {
-    const itemSub = item.total_price * (1 - discountPercent / 100)
-    return acc + (itemSub * (item.gst_rate / 100))
+  
+  // Calculate item-level pre-approved discounts (set by MO / Super Admin)
+  const cartItemDiscountTotal = cart.reduce((acc, item) => {
+    const dPercent = item.discount_percent || 0
+    return acc + ((item.total_price * dPercent) / 100)
   }, 0)
+
+  // Overall bill discount (either the doctor's manual global pack discount % or item pre-approved discounts, whichever is higher)
+  const cartGlobalDiscountAmount = (cartSubtotal * discountPercent) / 100
+  const cartDiscountAmount = Math.max(cartItemDiscountTotal, cartGlobalDiscountAmount)
+
+  // Calculate GST: if isGstActive is true, compute tax; if false, 0
+  const cartTaxAmount = isGstActive
+    ? cart.reduce((acc, item) => {
+        const effectiveItemDisc = Math.max(item.discount_percent || 0, discountPercent)
+        const itemTaxable = item.total_price * (1 - effectiveItemDisc / 100)
+        return acc + (itemTaxable * ((item.gst_rate !== undefined ? item.gst_rate : 5) / 100))
+      }, 0)
+    : 0
+
   const cartGrandTotal = Math.max(0, (cartSubtotal - cartDiscountAmount) + cartTaxAmount)
 
   // Complete POS Sale
@@ -691,6 +756,7 @@ export const AppProvider = ({ children }) => {
       expiry_date: item.expiry_date || null,
       quantity: item.quantity,
       unit_price: item.unit_price,
+      discount_percent: item.discount_percent || 0,
       total_price: item.total_price
     }))
 
@@ -704,6 +770,7 @@ export const AppProvider = ({ children }) => {
       discount_amount: parseFloat(cartDiscountAmount.toFixed(2)),
       tax_amount: parseFloat(cartTaxAmount.toFixed(2)),
       grand_total: parseFloat(cartGrandTotal.toFixed(2)),
+      is_gst_active: isGstActive,
       payment_mode: paymentMode,
       payment_status: 'Completed',
       notes: customNotes,
@@ -829,6 +896,8 @@ export const AppProvider = ({ children }) => {
         cartDiscountAmount,
         cartTaxAmount,
         cartGrandTotal,
+        isGstActive,
+        setIsGstActive,
         completeSale,
         totalStockCount,
         lowStockItems,
