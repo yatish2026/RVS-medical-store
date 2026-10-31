@@ -24,5 +24,10 @@ Thumbs.db
 .env.local
 .env.development.local
 .env.test.local
-.env.production.local
+# Python & SQLite
+__pycache__/
+*.pyc
+*.db
+*.sqlite3
+
 
