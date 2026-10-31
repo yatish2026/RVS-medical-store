@@ -19,12 +19,22 @@ import { SupplierModal } from './components/SupplierModal'
 import { RevenueAnalyticsModal } from './components/RevenueAnalyticsModal'
 import { AuthModal } from './components/AuthModal'
 import { UserManagementModal } from './components/UserManagementModal'
+import { LoginPage } from './components/LoginPage'
+import { DatabaseExplorerModal } from './components/DatabaseExplorerModal'
 
 export function App() {
-  const { activeTab } = useApp()
+  const {
+    activeTab,
+    currentUser,
+    login,
+    backendConnected,
+    isDbExplorerOpen,
+    setIsDbExplorerOpen
+  } = useApp()
 
   // Mobile drawer state
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+
 
   // Modal States
   const [isMedicineModalOpen, setIsMedicineModalOpen] = useState(false)
@@ -53,6 +63,16 @@ export function App() {
     setEditingMedicine(null)
     setTargetMedForBatch(med)
     setIsMedicineModalOpen(true)
+  }
+
+  // If not logged in, display full-screen LoginPage
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col antialiased selection:bg-teal-500 selection:text-white">
+        <LoginPage onLoginSuccess={login} backendConnected={backendConnected} />
+        <ToastContainer />
+      </div>
+    )
   }
 
   return (
@@ -148,6 +168,10 @@ export function App() {
       />
       <AuthModal />
       <UserManagementModal />
+      <DatabaseExplorerModal
+        isOpen={isDbExplorerOpen}
+        onClose={() => setIsDbExplorerOpen(false)}
+      />
       <ToastContainer />
     </div>
   )

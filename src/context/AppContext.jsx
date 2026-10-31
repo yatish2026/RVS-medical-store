@@ -59,7 +59,7 @@ export const AppProvider = ({ children }) => {
         // fallback
       }
     }
-    return INITIAL_USERS[0] // Default to Dr. Yatish (Super Admin)
+    return null // Default to null so user sees clean LoginPage first
   })
 
   // Pre-approved Clinical Pack Discount (Set by MO or Admin, reflects on Pharmacist terminal)
@@ -72,9 +72,11 @@ export const AppProvider = ({ children }) => {
     }
   })
 
-  // Auth & User Management Modals
+  // Auth, User Management & Database Explorer Modals
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
   const [isUserManagementModalOpen, setIsUserManagementModalOpen] = useState(false)
+  const [isDbExplorerOpen, setIsDbExplorerOpen] = useState(false)
+
 
   // Medical Data States with LocalStorage Persistence
   const [medicines, setMedicines] = useState(() => {
@@ -216,11 +218,11 @@ export const AppProvider = ({ children }) => {
   }
 
   const logout = () => {
-    notify('Logged Out', 'Switched to viewer session.', 'info')
-    const viewer = users.find(u => u.role === 'supervisor_viewer') || users[0]
-    setCurrentUser(viewer)
-    setIsAuthModalOpen(true)
+    localStorage.removeItem('rvs_current_user')
+    setCurrentUser(null)
+    notify('Logged Out', 'You have been securely signed out of RVS Dispensary.', 'info')
   }
+
 
   const addUser = async (userData) => {
     if (currentUser?.role !== 'admin_supervisor') {
@@ -847,7 +849,9 @@ export const AppProvider = ({ children }) => {
         isAuthModalOpen,
         setIsAuthModalOpen,
         isUserManagementModalOpen,
-        setIsUserManagementModalOpen
+        setIsUserManagementModalOpen,
+        isDbExplorerOpen,
+        setIsDbExplorerOpen
       }}
     >
       {children}

@@ -40,6 +40,17 @@ export const checkBackendHealth = async () => {
   }
 }
 
+// AUTHENTICATION
+export const apiLogin = async (username, password) => {
+  const res = await fetch(getUrl('/api/auth/login'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password })
+  })
+  if (!res.ok) throw new Error('Invalid username or password')
+  return await res.json()
+}
+
 // 1. MEDICINES
 export const apiGetMedicines = async () => {
   const res = await fetch(getUrl('/api/medicines'))
@@ -222,7 +233,7 @@ export const apiDeleteUser = async (id) => {
   return await res.json()
 }
 
-// 9. BULK SYNC / 1-CLICK SEED TO PYTHONANYWHERE MYSQL
+// 9. BULK SYNC / 1-CLICK SEED TO PYTHONANYWHERE BACKEND
 export const apiSeedAllData = async (payload) => {
   const res = await fetch(getUrl('/api/seed'), {
     method: 'POST',
@@ -232,3 +243,17 @@ export const apiSeedAllData = async (payload) => {
   if (!res.ok) throw new Error('Failed to seed database')
   return await res.json()
 }
+
+// 10. DATABASE EXPLORER (INSPECTOR)
+export const apiGetDbStats = async () => {
+  const res = await fetch(getUrl('/api/db/stats'))
+  if (!res.ok) throw new Error('Failed to fetch database statistics')
+  return await res.json()
+}
+
+export const apiGetDbTable = async (tableName) => {
+  const res = await fetch(getUrl(`/api/db/table/${tableName}`))
+  if (!res.ok) throw new Error(`Failed to fetch table ${tableName}`)
+  return await res.json()
+}
+

@@ -9,7 +9,9 @@ import {
   AlertTriangle,
   Clock,
   User,
-  ShieldCheck
+  ShieldCheck,
+  Database,
+  LogOut
 } from 'lucide-react'
 
 export const Header = ({ onOpenMedicineModal, onOpenPatientModal, onToggleMobileMenu, isMobileMenuOpen }) => {
@@ -23,7 +25,9 @@ export const Header = ({ onOpenMedicineModal, onOpenPatientModal, onToggleMobile
     canAddMedicine,
     canManageUsers,
     setIsAuthModalOpen,
-    setIsUserManagementModalOpen
+    setIsUserManagementModalOpen,
+    setIsDbExplorerOpen,
+    logout
   } = useApp()
 
   const [currentTime, setCurrentTime] = useState(new Date())
@@ -159,9 +163,26 @@ export const Header = ({ onOpenMedicineModal, onOpenPatientModal, onToggleMobile
                   </span>
                 </div>
               </div>
-              <span className="text-[10px] font-bold text-teal-700 bg-white px-1.5 py-0.5 rounded border border-slate-200 hidden md:inline">
-                Switch
-              </span>
+            </button>
+
+            {/* Database Explorer Button */}
+            <button
+              onClick={() => setIsDbExplorerOpen(true)}
+              title="Inspect Live SQLite Database (hospital.db)"
+              className="flex items-center gap-1.5 bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200/80 px-2.5 sm:px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer"
+            >
+              <Database className="w-3.5 h-3.5 text-teal-600" />
+              <span className="hidden md:inline">Database</span>
+            </button>
+
+            {/* Logout Button */}
+            <button
+              onClick={logout}
+              title="Sign Out of Session"
+              className="flex items-center gap-1.5 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 border border-slate-200 hover:border-rose-200 px-2.5 sm:px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Logout</span>
             </button>
 
           </div>

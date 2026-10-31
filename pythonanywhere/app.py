@@ -184,6 +184,57 @@ def health_check():
         "timestamp": datetime.utcnow().isoformat()
     })
 
+# --- DATABASE EXPLORER ENDPOINTS (For In-App DB Inspector) ---
+ALLOWED_TABLES = [
+    "users", "medicines", "batches", "patients", "suppliers",
+    "hospital_requisitions", "sales", "sale_items", "clinical_discount_policy"
+]
+
+@app.route("/api/db/stats", methods=["GET"])
+def db_stats():
+    conn = get_db()
+    cursor = conn.cursor()
+    tables_info = []
+    total_records = 0
+    for tbl in ALLOWED_TABLES:
+        try:
+            cursor.execute(f"SELECT COUNT(*) as count FROM {tbl}")
+            cnt = cursor.fetchone()["count"]
+            tables_info.append({"name": tbl, "count": cnt})
+            total_records += cnt
+        except Exception as e:
+            tables_info.append({"name": tbl, "count": 0, "error": str(e)})
+
+    db_size_bytes = 0
+    if os.path.exists(DB_PATH):
+        db_size_bytes = os.path.getsize(DB_PATH)
+
+    conn.close()
+    return jsonify({
+        "database_file": DB_PATH,
+        "database_engine": "SQLite 3 (Serverless, File-based SQL)",
+        "file_size_kb": round(db_size_bytes / 1024, 2),
+        "total_records": total_records,
+        "tables": tables_info,
+        "status": "Online & Persistent"
+    })
+
+@app.route("/api/db/table/<table_name>", methods=["GET"])
+def db_table_content(table_name):
+    if table_name not in ALLOWED_TABLES:
+        return jsonify({"error": "Table not allowed or does not exist"}), 400
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(f"SELECT * FROM {table_name} LIMIT 100")
+    rows = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    return jsonify({
+        "table": table_name,
+        "count": len(rows),
+        "rows": rows
+    })
+
+
 # --- 1. AUTH & USERS ---
 @app.route("/api/auth/login", methods=["POST"])
 def auth_login():
