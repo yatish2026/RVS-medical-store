@@ -38,39 +38,40 @@ export const LoginPage = ({ onLoginSuccess, backendConnected }) => {
   const handleLoginSubmit = async (e) => {
     e?.preventDefault()
     setErrorMsg('')
-    setLoading(true)
 
     const cleanUser = username.trim().toLowerCase()
     const cleanPass = password.trim()
 
     if (!cleanUser || !cleanPass) {
       setErrorMsg('Please enter both username and password.')
-      setLoading(false)
       return
     }
 
+    // 1. Instant check against local registry for zero latency (<10ms)
+    const localUsers = JSON.parse(localStorage.getItem('rvs_users') || 'null') || INITIAL_USERS
+    const localFound = localUsers.find(
+      (u) => u.username.toLowerCase() === cleanUser && u.password === cleanPass
+    )
+
+    if (localFound) {
+      onLoginSuccess(localFound)
+      return
+    }
+
+    // 2. If not matched locally, query Flask backend (e.g. for database users)
+    setLoading(true)
     try {
-      // 1. Try Flask API login
       const res = await apiLogin(cleanUser, cleanPass)
       if (res && res.success && res.user) {
+        setLoading(false)
         onLoginSuccess(res.user)
         return
       }
     } catch (apiErr) {
-      console.warn('Flask login request failed or offline; checking local users', apiErr)
+      console.warn('Backend login check failed', apiErr)
     }
 
-    // 2. Fallback to local user registry
-    const localUsers = JSON.parse(localStorage.getItem('rvs_users') || 'null') || INITIAL_USERS
-    const found = localUsers.find(
-      (u) => u.username.toLowerCase() === cleanUser && u.password === cleanPass
-    )
-
-    if (found) {
-      onLoginSuccess(found)
-    } else {
-      setErrorMsg('Invalid username or password. Check credentials or use quick demo login.')
-    }
+    setErrorMsg('Invalid username or password. Check credentials or use quick demo login below.')
     setLoading(false)
   }
 

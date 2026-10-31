@@ -28,7 +28,7 @@ export const checkBackendHealth = async () => {
     const res = await fetch(getUrl('/api/health'), {
       method: 'GET',
       headers: { 'Accept': 'application/json' },
-      signal: AbortSignal.timeout ? AbortSignal.timeout(4000) : undefined
+      signal: AbortSignal.timeout ? AbortSignal.timeout(1200) : undefined
     })
     if (res.ok) {
       const data = await res.json()
@@ -45,7 +45,8 @@ export const apiLogin = async (username, password) => {
   const res = await fetch(getUrl('/api/auth/login'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password })
+    body: JSON.stringify({ username, password }),
+    signal: AbortSignal.timeout ? AbortSignal.timeout(1500) : undefined
   })
   if (!res.ok) throw new Error('Invalid username or password')
   return await res.json()

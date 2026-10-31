@@ -190,14 +190,23 @@ export const AppProvider = ({ children }) => {
   }, [currentUser, preApprovedDiscount])
 
   // Auth Operations
-  const login = (username, password) => {
-    const user = users.find(
-      u => u.username.toLowerCase() === username.trim().toLowerCase() && u.password === password
-    )
+  const login = (userOrUsername, maybePassword) => {
+    let user = null
+    if (typeof userOrUsername === 'object' && userOrUsername !== null) {
+      user = userOrUsername
+    } else if (typeof userOrUsername === 'string') {
+      const uClean = userOrUsername.trim().toLowerCase()
+      user = users.find(
+        u => u.username.toLowerCase() === uClean && (!maybePassword || u.password === maybePassword)
+      )
+    }
+
     if (!user) {
       notify('Authentication Failed', 'Invalid username or password.', 'error')
       return false
     }
+
+    localStorage.setItem('rvs_current_user', JSON.stringify(user))
     setCurrentUser(user)
     const roleInfo = ROLES[user.role] || ROLES.pharmacist
     notify(`Welcome back, ${user.name}`, `Logged in as ${roleInfo.shortLabel} (${roleInfo.badge})`, 'success')
