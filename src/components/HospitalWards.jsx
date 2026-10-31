@@ -13,7 +13,7 @@ import {
 } from 'lucide-react'
 
 export const HospitalWards = ({ onOpenRequisitionModal }) => {
-  const { requisitions, updateRequisitionStatus } = useApp()
+  const { requisitions, updateRequisitionStatus, isReadOnly } = useApp()
   const [filterDept, setFilterDept] = useState('ALL')
 
   const departments = ['ALL', 'ICU - Critical Care', 'Emergency / ER', 'OT - Operation Theatre', 'Pediatric Ward', 'General Ward']
@@ -37,13 +37,15 @@ export const HospitalWards = ({ onOpenRequisitionModal }) => {
           </p>
         </div>
 
-        <button
-          onClick={onOpenRequisitionModal}
-          className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-teal-600 hover:from-indigo-500 hover:to-teal-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm shadow-md active:scale-95 transition-all"
-        >
-          <Plus className="w-4 h-4" />
-          <span>+ Issue Ward Drugs</span>
-        </button>
+        {!isReadOnly && (
+          <button
+            onClick={onOpenRequisitionModal}
+            className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-teal-600 hover:from-indigo-500 hover:to-teal-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm shadow-md active:scale-95 transition-all cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>+ Issue Ward Drugs</span>
+          </button>
+        )}
       </div>
 
       {/* Filter Tabs */}
@@ -119,24 +121,26 @@ export const HospitalWards = ({ onOpenRequisitionModal }) => {
               {/* Status Controls */}
               <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
                 <span className="font-semibold text-slate-500">Status: <strong className="text-teal-800 font-bold">{req.status}</strong></span>
-                <div className="flex items-center gap-1.5">
-                  {req.status !== 'Issued' && (
-                    <button
-                      onClick={() => updateRequisitionStatus(req.id, 'Issued')}
-                      className="px-2.5 py-1 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-800 text-xs font-bold border border-teal-200 shadow-2xs"
-                    >
-                      Mark Issued
-                    </button>
-                  )}
-                  {req.status === 'Issued' && (
-                    <button
-                      onClick={() => updateRequisitionStatus(req.id, 'Administered')}
-                      className="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-200 shadow-2xs"
-                    >
-                      Administered
-                    </button>
-                  )}
-                </div>
+                {!isReadOnly && (
+                  <div className="flex items-center gap-1.5">
+                    {req.status !== 'Issued' && (
+                      <button
+                        onClick={() => updateRequisitionStatus(req.id, 'Issued')}
+                        className="px-2.5 py-1 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-800 text-xs font-bold border border-teal-200 shadow-2xs cursor-pointer"
+                      >
+                        Mark Issued
+                      </button>
+                    )}
+                    {req.status === 'Issued' && (
+                      <button
+                        onClick={() => updateRequisitionStatus(req.id, 'Administered')}
+                        className="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-200 shadow-2xs cursor-pointer"
+                      >
+                        Administered
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )

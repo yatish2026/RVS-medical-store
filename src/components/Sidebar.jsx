@@ -21,13 +21,19 @@ export const Sidebar = ({ isOpen, onClose }) => {
     expiredCount,
     criticalExpiryCount,
     cart,
-    requisitions
+    requisitions,
+    currentUser,
+    currentRole,
+    canManageUsers,
+    isReadOnly,
+    setIsAuthModalOpen,
+    setIsUserManagementModalOpen
   } = useApp()
 
   const totalExpiryAlerts = expiredCount + criticalExpiryCount
   const pendingRequisitions = requisitions.filter(r => r.status === 'Requested' || r.priority === 'Emergency').length
 
-  // Navigation Items (Supabase developer tab removed for end users)
+  // Navigation Items with Role-Based Access Controls
   const navItems = [
     {
       id: 'dashboard',
@@ -155,25 +161,83 @@ export const Sidebar = ({ isOpen, onClose }) => {
                 </button>
               )
             })}
+
+            {/* Super Admin User Management Quick Nav */}
+            {canManageUsers && (
+              <button
+                onClick={() => {
+                  setIsUserManagementModalOpen(true)
+                  if (onClose) onClose()
+                }}
+                className="w-full mt-2 flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-200 shadow-2xs"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-1.5 rounded-lg bg-purple-600 text-white shadow-xs">
+                    <ShieldCheck className="w-4 h-4" />
+                  </div>
+                  <span className="truncate font-bold">User & Role Admin</span>
+                </div>
+                <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-purple-200 text-purple-900">
+                  Admin
+                </span>
+              </button>
+            )}
           </nav>
         </div>
 
-        {/* Clinical Info & Help Box */}
-        <div className="mt-4 pt-3 border-t border-slate-200">
-          <div className="bg-gradient-to-br from-slate-50 to-teal-50/50 border border-teal-100 p-3.5 rounded-2xl relative overflow-hidden">
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-              <h5 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider">RVS Pharmacy Desk</h5>
+        {/* Read-Only Banner for Supervisor Viewer */}
+        {isReadOnly && (
+          <div className="mt-2 p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs">
+            <div className="font-bold flex items-center gap-1.5 text-[11px]">
+              <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+              Supervisor Audit Mode
             </div>
-            <p className="text-[11px] text-slate-500 leading-relaxed mb-2.5">
-              24x7 In-House Dispensary & Central Pharmacy Ward.
+            <p className="text-[10px] text-amber-700 mt-0.5 leading-tight">
+              All records are read-only. Editing, deleting, and billing actions are locked.
             </p>
-            <div className="flex items-center justify-between text-[11px] font-mono font-semibold text-slate-700 bg-white px-2.5 py-1.5 rounded-lg border border-slate-200 shadow-2xs">
-              <span className="text-teal-700 font-bold flex items-center gap-1">
-                <PhoneCall className="w-3 h-3 text-teal-600" />
-                Ext: 404 / 405
+          </div>
+        )}
+
+        {/* Active User Session Profile Box */}
+        <div className="mt-3 pt-3 border-t border-slate-200">
+          <div className="bg-gradient-to-br from-slate-50 to-teal-50/50 border border-slate-200 p-3 rounded-2xl relative">
+            <div className="flex items-center justify-between mb-1.5">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 font-mono">
+                  Active Session
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  setIsAuthModalOpen(true)
+                  if (onClose) onClose()
+                }}
+                className="text-[10px] font-bold text-teal-700 hover:text-teal-900 underline cursor-pointer"
+              >
+                Switch Role
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-7 h-7 rounded-lg bg-white border border-slate-200 p-0.5 flex items-center justify-center shadow-2xs shrink-0">
+                <img src="/rvs-logo.png" alt="RVS Seal" className="w-full h-full object-contain rounded-sm" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-xs font-black text-slate-900 truncate">
+                  {currentUser?.name || 'Staff User'}
+                </div>
+                <div className="text-[10px] font-mono text-slate-500 truncate">
+                  {currentUser?.designation || currentRole?.shortLabel}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between text-[10px] font-mono font-semibold text-slate-700 bg-white px-2 py-1 rounded-lg border border-slate-200">
+              <span className={`px-1.5 py-0.2 rounded font-bold border ${currentRole?.tagBg || 'bg-slate-100 text-slate-700'}`}>
+                {currentRole?.shortLabel}
               </span>
-              <span className="text-slate-500">Central Wing</span>
+              <span className="text-slate-400">RVS Hospital</span>
             </div>
           </div>
         </div>

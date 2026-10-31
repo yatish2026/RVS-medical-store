@@ -1,0 +1,111 @@
+// Authentication and Role Definitions for RVS Medical Store & Hospital Management
+
+export const ROLES = {
+  admin_supervisor: {
+    key: 'admin_supervisor',
+    label: 'Super Admin (Full Edit & User Management)',
+    shortLabel: 'Super Admin',
+    description: 'Full administrative access. Can edit medicine stock, billing, discounts, and create/manage user logins with assigned roles.',
+    badge: 'Full Access & Admin',
+    canEdit: true,
+    canAddMedicine: true,
+    canDeleteMedicine: true,
+    canManageUsers: true,
+    canApplyDiscount: true,
+    canBill: true,
+    isReadOnly: false,
+    color: 'purple',
+    gradient: 'from-purple-600 to-indigo-600',
+    tagBg: 'bg-purple-50 text-purple-700 border-purple-200'
+  },
+  doctor_mo: {
+    key: 'doctor_mo',
+    label: 'Medical Officer / Doctor (MO)',
+    shortLabel: 'MO Doctor',
+    description: 'Hospital Medical Officer. Can view inventory, review patient clinical records, and apply special complete pack / patient clinical discounts.',
+    badge: 'Clinical & Discount Authority',
+    canEdit: true,
+    canAddMedicine: true,
+    canDeleteMedicine: false,
+    canManageUsers: false,
+    canApplyDiscount: true, // Special Doctor authority: Can authorize complete pack discount
+    canBill: true,
+    isReadOnly: false,
+    color: 'teal',
+    gradient: 'from-teal-600 to-cyan-600',
+    tagBg: 'bg-teal-50 text-teal-700 border-teal-200'
+  },
+  supervisor_viewer: {
+    key: 'supervisor_viewer',
+    label: 'Supervisor (Read-Only / Auditor)',
+    shortLabel: 'Supervisor (Viewer)',
+    description: 'Auditor & Observer role. Can inspect all records, stock levels, sales reports, and patient records, but cannot edit, add, or delete any data.',
+    badge: 'Audit & View-Only',
+    canEdit: false,
+    canAddMedicine: false,
+    canDeleteMedicine: false,
+    canManageUsers: false,
+    canApplyDiscount: false,
+    canBill: false,
+    isReadOnly: true, // Strictly read-only
+    color: 'amber',
+    gradient: 'from-amber-600 to-orange-600',
+    tagBg: 'bg-amber-50 text-amber-700 border-amber-200'
+  },
+  pharmacist: {
+    key: 'pharmacist',
+    label: 'Pharmacist (Dispensary)',
+    shortLabel: 'Pharmacist',
+    description: 'Dispensary operations. Can add medicine stock, perform patient billing, and print invoices. Strictly restricted from adding or modifying discounts (discounts must be pre-authorized by MO or Admin).',
+    badge: 'Dispensary & Stock Inward',
+    canEdit: true,
+    canAddMedicine: true,
+    canDeleteMedicine: false,
+    canManageUsers: false,
+    canApplyDiscount: false, // Locked: discounts are set by MO or Admin and reflect directly on screen
+    canBill: true,
+    isReadOnly: false,
+    color: 'blue',
+    gradient: 'from-blue-600 to-teal-600',
+    tagBg: 'bg-blue-50 text-blue-700 border-blue-200'
+  }
+}
+
+export const INITIAL_USERS = [
+  {
+    id: 'user-admin',
+    username: 'admin',
+    password: 'admin123',
+    name: 'Dr. Yatish',
+    role: 'admin_supervisor',
+    designation: 'Chief Medical Administrator & Supervisor',
+    phone: '+91 98765 43210'
+  },
+  {
+    id: 'user-doctor',
+    username: 'doctor_mo',
+    password: 'doc123',
+    name: 'Dr. A. Sharma (MD)',
+    role: 'doctor_mo',
+    designation: 'Duty Medical Officer (MO) - General Medicine',
+    phone: '+91 98765 43211'
+  },
+  {
+    id: 'user-supervisor',
+    username: 'supervisor',
+    password: 'viewer123',
+    name: 'R. Verma',
+    role: 'supervisor_viewer',
+    designation: 'Hospital Operations Supervisor & Auditor',
+    phone: '+91 98765 43212'
+  },
+  {
+    id: 'user-pharmacist',
+    username: 'pharmacist',
+    password: 'pharma123',
+    name: 'S. Kumar',
+    role: 'pharmacist',
+    designation: 'Head Dispensary Pharmacist',
+    phone: '+91 98765 43213'
+  }
+]

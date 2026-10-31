@@ -17,6 +17,8 @@ import { PatientModal } from './components/PatientModal'
 import { RequisitionModal } from './components/RequisitionModal'
 import { SupplierModal } from './components/SupplierModal'
 import { RevenueAnalyticsModal } from './components/RevenueAnalyticsModal'
+import { AuthModal } from './components/AuthModal'
+import { UserManagementModal } from './components/UserManagementModal'
 
 export function App() {
   const { activeTab } = useApp()
@@ -144,6 +146,8 @@ export function App() {
         isOpen={isSupplierModalOpen}
         onClose={() => setIsSupplierModalOpen(false)}
       />
+      <AuthModal />
+      <UserManagementModal />
       <ToastContainer />
     </div>
   )

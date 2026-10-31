@@ -9,7 +9,7 @@ lerna-debug.log*
 
 # Diagnostic / IDE / OS
 node_modules
-dist
+# dist is included so PythonAnywhere can serve pre-built frontend without Node.js
 dist-ssr
 *.local
 .DS_Store

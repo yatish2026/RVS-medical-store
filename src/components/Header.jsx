@@ -8,7 +8,8 @@ import {
   X,
   AlertTriangle,
   Clock,
-  User
+  User,
+  ShieldCheck
 } from 'lucide-react'
 
 export const Header = ({ onOpenMedicineModal, onOpenPatientModal, onToggleMobileMenu, isMobileMenuOpen }) => {
@@ -16,7 +17,13 @@ export const Header = ({ onOpenMedicineModal, onOpenPatientModal, onToggleMobile
     setActiveTab,
     cart,
     expiredCount,
-    criticalExpiryCount
+    criticalExpiryCount,
+    currentUser,
+    currentRole,
+    canAddMedicine,
+    canManageUsers,
+    setIsAuthModalOpen,
+    setIsUserManagementModalOpen
   } = useApp()
 
   const [currentTime, setCurrentTime] = useState(new Date())
@@ -109,26 +116,53 @@ export const Header = ({ onOpenMedicineModal, onOpenPatientModal, onToggleMobile
               )}
             </button>
 
-            {/* Quick Action: Add Med (Desktop/Tablet) */}
-            <button
-              onClick={onOpenMedicineModal}
-              className="hidden sm:flex items-center gap-1.5 bg-slate-100 hover:bg-teal-50 text-slate-700 hover:text-teal-800 px-3 py-2 rounded-xl text-xs font-bold border border-slate-200 hover:border-teal-200 transition-colors cursor-pointer"
-            >
-              <Plus className="w-4 h-4 text-teal-600" />
-              <span className="hidden md:inline">+ New Medicine</span>
-              <span className="md:hidden">+ Med</span>
-            </button>
+            {/* Quick Action: Add Med (Desktop/Tablet) - Hidden for Read-Only Supervisor */}
+            {canAddMedicine && (
+              <button
+                onClick={onOpenMedicineModal}
+                className="hidden sm:flex items-center gap-1.5 bg-slate-100 hover:bg-teal-50 text-slate-700 hover:text-teal-800 px-3 py-2 rounded-xl text-xs font-bold border border-slate-200 hover:border-teal-200 transition-colors cursor-pointer"
+              >
+                <Plus className="w-4 h-4 text-teal-600" />
+                <span className="hidden md:inline">+ New Medicine</span>
+                <span className="md:hidden">+ Med</span>
+              </button>
+            )}
 
-            {/* Pharmacist Profile Badge */}
-            <div className="flex items-center gap-2 bg-slate-100/80 border border-slate-200 p-1 sm:px-3 sm:py-1 rounded-xl">
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white border border-teal-200 p-0.5 flex items-center justify-center shadow-xs shrink-0">
+            {/* Super Admin: User Management Button */}
+            {canManageUsers && (
+              <button
+                onClick={() => setIsUserManagementModalOpen(true)}
+                title="Manage Staff Logins & Roles (Super Admin)"
+                className="hidden lg:flex items-center gap-1.5 bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 px-3 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+              >
+                <ShieldCheck className="w-4 h-4 text-purple-600" />
+                <span>Users & Roles</span>
+              </button>
+            )}
+
+            {/* User Profile & Role Switcher Badge (Click to open AuthModal) */}
+            <button
+              onClick={() => setIsAuthModalOpen(true)}
+              className="flex items-center gap-2 bg-slate-100/90 hover:bg-slate-200/80 border border-slate-200/90 p-1 sm:px-2.5 sm:py-1 rounded-xl transition-all cursor-pointer group text-left"
+              title="Click to Switch Role or Log in"
+            >
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white border border-slate-200 p-0.5 flex items-center justify-center shadow-2xs shrink-0">
                 <img src="/rvs-logo.png" alt="RVS Seal" className="w-full h-full object-contain rounded-md" />
               </div>
-              <div className="hidden xl:block text-left">
-                <div className="text-xs font-extrabold text-slate-800 leading-tight">Chief Pharmacist</div>
-                <div className="text-[10px] text-teal-700 font-semibold font-mono">Dispensary Desk</div>
+              <div className="hidden sm:block">
+                <div className="text-xs font-extrabold text-slate-900 leading-tight group-hover:text-teal-700 flex items-center gap-1">
+                  <span className="truncate max-w-[110px]">{currentUser?.name || 'Staff User'}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded font-mono border ${currentRole?.tagBg || 'bg-slate-100 text-slate-600'}`}>
+                    {currentRole?.shortLabel || 'User'}
+                  </span>
+                </div>
               </div>
-            </div>
+              <span className="text-[10px] font-bold text-teal-700 bg-white px-1.5 py-0.5 rounded border border-slate-200 hidden md:inline">
+                Switch
+              </span>
+            </button>
 
           </div>
 

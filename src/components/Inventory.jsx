@@ -27,7 +27,11 @@ export const Inventory = ({ onOpenMedicineModal, onOpenBatchModal, onEditMedicin
     batches,
     deleteMedicine,
     addToCart,
-    notify
+    notify,
+    canAddMedicine,
+    canDeleteMedicine,
+    canEdit,
+    isReadOnly
   } = useApp()
 
   const [searchQuery, setSearchQuery] = useState('')
@@ -70,13 +74,19 @@ export const Inventory = ({ onOpenMedicineModal, onOpenBatchModal, onEditMedicin
         </div>
 
         <div className="flex items-center gap-2.5">
-          <button
-            onClick={onOpenMedicineModal}
-            className="flex items-center gap-2 bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-500 hover:to-teal-600 text-white font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm shadow-md shadow-teal-700/15 active:scale-95 transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            <span>+ Add Medicine & Expiry</span>
-          </button>
+          {canAddMedicine ? (
+            <button
+              onClick={onOpenMedicineModal}
+              className="flex items-center gap-2 bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-500 hover:to-teal-600 text-white font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm shadow-md shadow-teal-700/15 active:scale-95 transition-all cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>+ Add Medicine & Expiry</span>
+            </button>
+          ) : (
+            <div className="px-3.5 py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold font-mono">
+              Audit Mode (Read-Only)
+            </div>
+          )}
         </div>
       </div>
 
@@ -225,38 +235,50 @@ export const Inventory = ({ onOpenMedicineModal, onOpenBatchModal, onEditMedicin
 
                         {/* Action Buttons */}
                         <td className="py-3.5 px-4 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            {/* Inward Batch Button */}
-                            <button
-                              onClick={() => onOpenBatchModal(med)}
-                              title="Add new batch / stock inward"
-                              className="p-2 rounded-lg bg-slate-100 hover:bg-teal-50 text-slate-600 hover:text-teal-800 border border-slate-200 hover:border-teal-200 transition-colors"
-                            >
-                              <PackagePlus className="w-4 h-4" />
-                            </button>
+                          {isReadOnly ? (
+                            <span className="text-[11px] text-slate-400 font-mono italic">
+                              View Only
+                            </span>
+                          ) : (
+                            <div className="flex items-center justify-end gap-1.5">
+                              {/* Inward Batch Button */}
+                              {canAddMedicine && (
+                                <button
+                                  onClick={() => onOpenBatchModal(med)}
+                                  title="Add new batch / stock inward"
+                                  className="p-2 rounded-lg bg-slate-100 hover:bg-teal-50 text-slate-600 hover:text-teal-800 border border-slate-200 hover:border-teal-200 transition-colors cursor-pointer"
+                                >
+                                  <PackagePlus className="w-4 h-4" />
+                                </button>
+                              )}
 
-                            {/* Edit */}
-                            <button
-                              onClick={() => onEditMedicine(med)}
-                              title="Edit medicine details"
-                              className="p-2 rounded-lg bg-slate-100 hover:bg-cyan-50 text-slate-600 hover:text-cyan-800 border border-slate-200 hover:border-cyan-200 transition-colors"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
+                              {/* Edit */}
+                              {canEdit && (
+                                <button
+                                  onClick={() => onEditMedicine(med)}
+                                  title="Edit medicine details"
+                                  className="p-2 rounded-lg bg-slate-100 hover:bg-cyan-50 text-slate-600 hover:text-cyan-800 border border-slate-200 hover:border-cyan-200 transition-colors cursor-pointer"
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </button>
+                              )}
 
-                            {/* Delete */}
-                            <button
-                              onClick={() => {
-                                if (window.confirm(`Are you sure you want to remove "${med.name}" and all its batches?`)) {
-                                  deleteMedicine(med.id)
-                                }
-                              }}
-                              title="Delete medicine"
-                              className="p-2 rounded-lg bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 border border-slate-200 hover:border-rose-200 transition-colors"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
+                              {/* Delete (Super Admin only) */}
+                              {canDeleteMedicine && (
+                                <button
+                                  onClick={() => {
+                                    if (window.confirm(`Are you sure you want to remove "${med.name}" and all its batches?`)) {
+                                      deleteMedicine(med.id)
+                                    }
+                                  }}
+                                  title="Delete medicine"
+                                  className="p-2 rounded-lg bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 border border-slate-200 hover:border-rose-200 transition-colors cursor-pointer"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                          )}
                         </td>
                       </tr>
 

@@ -34,7 +34,9 @@ export const Dashboard = ({ onOpenMedicineModal, onOpenPatientModal, onOpenBatch
     totalSalesRevenue,
     totalStockCount,
     setActiveTab,
-    setActiveInvoice
+    setActiveInvoice,
+    canAddMedicine,
+    isReadOnly
   } = useApp()
 
   // Today's sales
@@ -88,13 +90,15 @@ export const Dashboard = ({ onOpenMedicineModal, onOpenPatientModal, onOpenBatch
               <TrendingUp className="w-4 h-4 text-emerald-300" />
               <span>Day-Wise Sales</span>
             </button>
-            <button
-              onClick={onOpenMedicineModal}
-              className="flex items-center gap-2 bg-teal-800/60 hover:bg-teal-800/90 text-white font-bold px-4 py-3 rounded-xl text-xs sm:text-sm border border-teal-500/40 active:scale-95 transition-all cursor-pointer"
-            >
-              <Plus className="w-4 h-4 text-white" />
-              <span>+ Add Medicine</span>
-            </button>
+            {canAddMedicine && (
+              <button
+                onClick={onOpenMedicineModal}
+                className="flex items-center gap-2 bg-teal-800/60 hover:bg-teal-800/90 text-white font-bold px-4 py-3 rounded-xl text-xs sm:text-sm border border-teal-500/40 active:scale-95 transition-all cursor-pointer"
+              >
+                <Plus className="w-4 h-4 text-white" />
+                <span>+ Add Medicine</span>
+              </button>
+            )}
           </div>
         </div>
       </div>

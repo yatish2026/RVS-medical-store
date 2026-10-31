@@ -411,7 +411,7 @@ export const RevenueAnalyticsModal = ({ isOpen, onClose }) => {
         <div className="bg-slate-50 px-5 sm:px-6 py-3 border-t border-slate-200 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2 text-[11px] text-slate-500 font-mono">
             <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-            <span>Real-time cloud synchronized with Supabase</span>
+            <span>Real-time cloud synchronized with PythonAnywhere Flask API</span>
           </div>
 
           <button

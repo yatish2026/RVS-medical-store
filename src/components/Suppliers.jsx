@@ -12,7 +12,7 @@ import {
 } from 'lucide-react'
 
 export const Suppliers = ({ onOpenSupplierModal }) => {
-  const { suppliers } = useApp()
+  const { suppliers, isReadOnly } = useApp()
   const [searchQuery, setSearchQuery] = useState('')
 
   const filtered = suppliers.filter(s =>
@@ -38,13 +38,15 @@ export const Suppliers = ({ onOpenSupplierModal }) => {
           </p>
         </div>
 
-        <button
-          onClick={onOpenSupplierModal}
-          className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-teal-600 hover:from-purple-500 hover:to-teal-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm shadow-md active:scale-95 transition-all"
-        >
-          <Plus className="w-4 h-4" />
-          <span>+ Register New Supplier</span>
-        </button>
+        {!isReadOnly && (
+          <button
+            onClick={onOpenSupplierModal}
+            className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-teal-600 hover:from-purple-500 hover:to-teal-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm shadow-md active:scale-95 transition-all cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>+ Register New Supplier</span>
+          </button>
+        )}
       </div>
 
       {/* Summary Stat */}

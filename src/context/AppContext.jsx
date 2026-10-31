@@ -7,7 +7,33 @@ import {
   INITIAL_REQUISITIONS,
   INITIAL_SALES
 } from '../lib/demoData'
-import { supabase, checkSupabaseConnection, generateUUID } from '../lib/supabase'
+import { ROLES, INITIAL_USERS } from '../lib/authData'
+import {
+  generateUUID,
+  checkBackendHealth,
+  apiGetMedicines,
+  apiCreateMedicine,
+  apiUpdateMedicine,
+  apiDeleteMedicine,
+  apiGetBatches,
+  apiCreateBatch,
+  apiUpdateBatch,
+  apiGetPatients,
+  apiCreatePatient,
+  apiGetSuppliers,
+  apiCreateSupplier,
+  apiGetRequisitions,
+  apiCreateRequisition,
+  apiUpdateRequisitionStatus,
+  apiGetSales,
+  apiCreateSale,
+  apiGetDiscountPolicy,
+  apiUpdateDiscountPolicy,
+  apiGetUsers,
+  apiCreateUser,
+  apiDeleteUser,
+  apiSeedAllData
+} from '../lib/api'
 
 const AppContext = createContext()
 
@@ -17,6 +43,38 @@ export const AppProvider = ({ children }) => {
 
   // Theme State
   const [darkMode, setDarkMode] = useState(false)
+
+  // User Authentication & Roles State
+  const [users, setUsers] = useState(() => {
+    const saved = localStorage.getItem('rvs_users')
+    return saved ? JSON.parse(saved) : INITIAL_USERS
+  })
+
+  const [currentUser, setCurrentUser] = useState(() => {
+    const saved = localStorage.getItem('rvs_current_user')
+    if (saved) {
+      try {
+        return JSON.parse(saved)
+      } catch (e) {
+        // fallback
+      }
+    }
+    return INITIAL_USERS[0] // Default to Dr. Yatish (Super Admin)
+  })
+
+  // Pre-approved Clinical Pack Discount (Set by MO or Admin, reflects on Pharmacist terminal)
+  const [preApprovedDiscount, setPreApprovedDiscount] = useState(() => {
+    const saved = localStorage.getItem('rvs_preapproved_discount')
+    return saved ? JSON.parse(saved) : {
+      percent: 10,
+      appliedBy: 'Dr. A. Sharma (MO)',
+      reason: 'General OPD Pack Discount'
+    }
+  })
+
+  // Auth & User Management Modals
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
+  const [isUserManagementModalOpen, setIsUserManagementModalOpen] = useState(false)
 
   // Medical Data States with LocalStorage Persistence
   const [medicines, setMedicines] = useState(() => {
@@ -57,12 +115,14 @@ export const AppProvider = ({ children }) => {
     doctor: 'Dr. On-Duty Medical Officer',
     uhid: ''
   })
-  const [discountPercent, setDiscountPercent] = useState(0)
+  const [discountPercent, setDiscountPercent] = useState(() => {
+    return preApprovedDiscount?.percent || 0
+  })
   const [activeInvoice, setActiveInvoice] = useState(null)
 
-  // Supabase Connection Status
-  const [supabaseConnected, setSupabaseConnected] = useState(false)
-  const [supabaseSyncing, setSupabaseSyncing] = useState(false)
+  // PythonAnywhere Flask API & MySQL Connection Status
+  const [backendConnected, setBackendConnected] = useState(false)
+  const [backendSyncing, setBackendSyncing] = useState(false)
   const [syncMessage, setSyncMessage] = useState('')
 
   // Toast Notifications
@@ -107,223 +167,238 @@ export const AppProvider = ({ children }) => {
     localStorage.setItem('rvs_sales', JSON.stringify(sales))
   }, [sales])
 
-  // Initial Supabase health check & load
+  // Persist Auth & Roles to local storage
   useEffect(() => {
-    const initSupabase = async () => {
-      const res = await checkSupabaseConnection()
-      setSupabaseConnected(res.connected)
+    localStorage.setItem('rvs_users', JSON.stringify(users))
+  }, [users])
+
+  useEffect(() => {
+    localStorage.setItem('rvs_current_user', JSON.stringify(currentUser))
+  }, [currentUser])
+
+  useEffect(() => {
+    localStorage.setItem('rvs_preapproved_discount', JSON.stringify(preApprovedDiscount))
+  }, [preApprovedDiscount])
+
+  // When current user is Pharmacist, auto-sync discount to pre-approved percentage
+  useEffect(() => {
+    if (currentUser?.role === 'pharmacist' && preApprovedDiscount?.percent !== undefined) {
+      setDiscountPercent(preApprovedDiscount.percent)
+    }
+  }, [currentUser, preApprovedDiscount])
+
+  // Auth Operations
+  const login = (username, password) => {
+    const user = users.find(
+      u => u.username.toLowerCase() === username.trim().toLowerCase() && u.password === password
+    )
+    if (!user) {
+      notify('Authentication Failed', 'Invalid username or password.', 'error')
+      return false
+    }
+    setCurrentUser(user)
+    const roleInfo = ROLES[user.role] || ROLES.pharmacist
+    notify(`Welcome back, ${user.name}`, `Logged in as ${roleInfo.shortLabel} (${roleInfo.badge})`, 'success')
+    setIsAuthModalOpen(false)
+    return true
+  }
+
+  const quickSwitchUser = (userIdOrRole) => {
+    const user = users.find(u => u.id === userIdOrRole || u.role === userIdOrRole)
+    if (user) {
+      setCurrentUser(user)
+      const roleInfo = ROLES[user.role] || ROLES.pharmacist
+      notify(`Role Switched: ${roleInfo.shortLabel}`, `Active profile: ${user.name}. Permissions updated.`, 'success')
+      setIsAuthModalOpen(false)
+      return true
+    }
+    return false
+  }
+
+  const logout = () => {
+    notify('Logged Out', 'Switched to viewer session.', 'info')
+    const viewer = users.find(u => u.role === 'supervisor_viewer') || users[0]
+    setCurrentUser(viewer)
+    setIsAuthModalOpen(true)
+  }
+
+  const addUser = async (userData) => {
+    if (currentUser?.role !== 'admin_supervisor') {
+      notify('Access Denied', 'Only Super Admin can create user logins.', 'error')
+      return false
+    }
+    const usernameClean = userData.username.trim().toLowerCase()
+    if (users.some(u => u.username.toLowerCase() === usernameClean)) {
+      notify('Duplicate Username', `Username "${userData.username}" is already taken.`, 'error')
+      return false
+    }
+    const newUser = {
+      id: `user-${Date.now()}`,
+      username: usernameClean,
+      password: userData.password,
+      name: userData.name,
+      role: userData.role,
+      designation: userData.designation || ROLES[userData.role]?.label,
+      phone: userData.phone || ''
+    }
+    setUsers(prev => [...prev, newUser])
+    try {
+      await apiCreateUser(newUser)
+    } catch (e) {}
+    notify('User Created', `Account for ${newUser.name} (${ROLES[newUser.role]?.shortLabel}) was added.`, 'success')
+    return true
+  }
+
+  const deleteUser = async (userId) => {
+    if (currentUser?.role !== 'admin_supervisor') {
+      notify('Access Denied', 'Only Super Admin can delete users.', 'error')
+      return false
+    }
+    if (currentUser.id === userId) {
+      notify('Action Blocked', 'You cannot delete your own currently active Super Admin account.', 'warning')
+      return false
+    }
+    const target = users.find(u => u.id === userId)
+    setUsers(prev => prev.filter(u => u.id !== userId))
+    try {
+      await apiDeleteUser(userId)
+    } catch (e) {}
+    notify('User Removed', `Account for ${target?.name || 'User'} has been removed.`, 'info')
+    return true
+  }
+
+  const updatePreApprovedDiscount = async (percent, reason = 'Authorized Clinical Discount') => {
+    if (currentUser?.role !== 'admin_supervisor' && currentUser?.role !== 'doctor_mo') {
+      notify('Permission Restricted', 'Only Medical Officer (MO) or Super Admin can authorize clinical discounts.', 'error')
+      return false
+    }
+    const num = Math.max(0, Math.min(100, Number(percent) || 0))
+    const updated = {
+      percent: num,
+      appliedBy: `${currentUser.name} (${ROLES[currentUser.role]?.shortLabel})`,
+      reason: reason || 'Clinical Pack Discount'
+    }
+    setPreApprovedDiscount(updated)
+    setDiscountPercent(num)
+    try {
+      await apiUpdateDiscountPolicy({
+        discount_percent: num,
+        authorized_by: updated.appliedBy,
+        reason: updated.reason
+      })
+    } catch (e) {}
+    notify('Discount Authorized', `${num}% discount applied & locked for dispensary pharmacists by ${currentUser.name}.`, 'success')
+    return true
+  }
+
+  // Initial PythonAnywhere Flask API health check & load
+  useEffect(() => {
+    const initBackend = async () => {
+      const res = await checkBackendHealth()
+      setBackendConnected(res.connected)
       if (res.connected) {
-        setSyncMessage('Connected to Supabase Cloud')
-        await fetchFromSupabase()
+        setSyncMessage('Connected to PythonAnywhere Flask API & MySQL')
+        await fetchFromBackend()
       } else {
-        setSyncMessage('Local / Ready for Cloud Sync')
+        setSyncMessage('Local Mode (PythonAnywhere API Standby)')
       }
     }
-    initSupabase()
+    initBackend()
   }, [])
 
-  // Fetch all tables from Supabase
-  const fetchFromSupabase = async () => {
+  // Fetch all tables from PythonAnywhere Flask API
+  const fetchFromBackend = async () => {
     try {
-      const { data: cloudMeds } = await supabase.from('medicines').select('*')
-      const { data: cloudBatches } = await supabase.from('batches').select('*')
-      const { data: cloudPatients } = await supabase.from('patients').select('*')
-      const { data: cloudSuppliers } = await supabase.from('suppliers').select('*')
-      const { data: cloudSales } = await supabase.from('sales').select('*')
-      const { data: cloudSaleItems } = await supabase.from('sale_items').select('*')
-      const { data: cloudReqs } = await supabase.from('hospital_requisitions').select('*')
+      const [cloudMeds, cloudBatches, cloudPatients, cloudSuppliers, cloudSales, cloudReqs, discountData, cloudUsers] = await Promise.allSettled([
+        apiGetMedicines(),
+        apiGetBatches(),
+        apiGetPatients(),
+        apiGetSuppliers(),
+        apiGetSales(),
+        apiGetRequisitions(),
+        apiGetDiscountPolicy(),
+        apiGetUsers()
+      ])
 
-      if (cloudMeds && cloudMeds.length > 0) {
-        setMedicines(cloudMeds)
+      if (cloudMeds.status === 'fulfilled' && Array.isArray(cloudMeds.value) && cloudMeds.value.length > 0) {
+        setMedicines(cloudMeds.value)
       }
-      if (cloudBatches && cloudBatches.length > 0) {
-        setBatches(cloudBatches)
+      if (cloudBatches.status === 'fulfilled' && Array.isArray(cloudBatches.value) && cloudBatches.value.length > 0) {
+        setBatches(cloudBatches.value)
       }
-      if (cloudPatients && cloudPatients.length > 0) {
-        setPatients(cloudPatients)
+      if (cloudPatients.status === 'fulfilled' && Array.isArray(cloudPatients.value) && cloudPatients.value.length > 0) {
+        setPatients(cloudPatients.value)
       }
-      if (cloudSuppliers && cloudSuppliers.length > 0) {
-        setSuppliers(cloudSuppliers)
+      if (cloudSuppliers.status === 'fulfilled' && Array.isArray(cloudSuppliers.value) && cloudSuppliers.value.length > 0) {
+        setSuppliers(cloudSuppliers.value)
       }
-      if (cloudSales && cloudSales.length > 0) {
-        // Attach line items to corresponding sales
-        const populatedSales = cloudSales.map(s => ({
-          ...s,
-          items: cloudSaleItems ? cloudSaleItems.filter(si => si.sale_id === s.id) : []
-        }))
-        setSales(populatedSales)
+      if (cloudSales.status === 'fulfilled' && Array.isArray(cloudSales.value) && cloudSales.value.length > 0) {
+        setSales(cloudSales.value)
       }
-      if (cloudReqs && cloudReqs.length > 0) {
-        setRequisitions(cloudReqs)
+      if (cloudReqs.status === 'fulfilled' && Array.isArray(cloudReqs.value) && cloudReqs.value.length > 0) {
+        setRequisitions(cloudReqs.value)
+      }
+      if (discountData.status === 'fulfilled' && discountData.value?.discount_percent !== undefined) {
+        setPreApprovedDiscount({
+          percent: Number(discountData.value.discount_percent),
+          appliedBy: discountData.value.authorized_by || 'Dr. A. Sharma (MO)',
+          reason: discountData.value.reason || 'General OPD Pack Discount'
+        })
+      }
+      if (cloudUsers.status === 'fulfilled' && Array.isArray(cloudUsers.value) && cloudUsers.value.length > 0) {
+        setUsers(cloudUsers.value)
       }
       return true
     } catch (e) {
-      console.warn('Supabase fetch error:', e)
+      console.warn('PythonAnywhere API fetch error:', e)
       return false
     }
   }
 
-  // Push all local formulary data to Supabase (1-click Cloud Seed)
-  const pushAllLocalDataToSupabase = async () => {
-    setSupabaseSyncing(true)
+  // Push all local formulary data to PythonAnywhere MySQL (1-click Cloud Seed)
+  const pushAllLocalDataToBackend = async () => {
+    setBackendSyncing(true)
     try {
-      // 1. Create a mapping for demo medicine IDs to valid UUIDs
-      const idMap = {}
-      const formattedMeds = medicines.map(m => {
-        const newId = (m.id && m.id.length === 36) ? m.id : generateUUID()
-        idMap[m.id] = newId
-        return {
-          id: newId,
-          name: m.name,
-          generic_name: m.generic_name || '',
-          category: m.category || 'General',
-          dosage_form: m.dosage_form || 'Tablet',
-          strength: m.strength || '',
-          manufacturer: m.manufacturer || '',
-          shelf_location: m.shelf_location || 'Rack A-01',
-          min_stock_alert: parseInt(m.min_stock_alert, 10) || 20,
-          prescription_required: true,
-          hsn_code: m.hsn_code || '30049099',
-          gst_rate: parseFloat(m.gst_rate) || 12.00
-        }
-      })
-
-      const { error: medError } = await supabase.from('medicines').upsert(formattedMeds)
-      if (medError) throw medError
-
-      // 2. Format Batches with matching UUIDs
-      const batchIdMap = {}
-      const formattedBatches = batches.map(b => {
-        const bId = (b.id && b.id.length === 36) ? b.id : generateUUID()
-        batchIdMap[b.id] = bId
-        return {
-          id: bId,
-          medicine_id: idMap[b.medicine_id] || formattedMeds[0]?.id,
-          batch_number: b.batch_number,
-          expiry_date: b.expiry_date,
-          cost_price: parseFloat(b.cost_price) || 0,
-          mrp: parseFloat(b.mrp) || 0,
-          selling_price: parseFloat(b.selling_price) || parseFloat(b.mrp) || 0,
-          current_stock: parseInt(b.current_stock, 10) || 0,
-          supplier_name: b.supplier_name || 'Apollo Pharma Distributors'
-        }
-      })
-
-      const { error: batchError } = await supabase.from('batches').upsert(formattedBatches)
-      if (batchError) throw batchError
-
-      // 3. Format Patients
-      const formattedPatients = patients.map(p => ({
-        id: (p.id && p.id.length === 36) ? p.id : generateUUID(),
-        uhid: p.uhid,
-        name: p.name,
-        phone: p.phone,
-        age: parseInt(p.age, 10) || 30,
-        gender: p.gender,
-        blood_group: p.blood_group,
-        doctor_name: p.doctor_name,
-        diagnosis: p.diagnosis,
-        allergies: p.allergies
-      }))
-      await supabase.from('patients').upsert(formattedPatients)
-
-      // 4. Format Suppliers
-      const formattedSuppliers = suppliers.map(s => ({
-        id: (s.id && s.id.length === 36) ? s.id : generateUUID(),
-        name: s.name,
-        company_name: s.company_name,
-        phone: s.phone,
-        email: s.email,
-        gstin: s.gstin,
-        address: s.address,
-        balance_payable: parseFloat(s.balance_payable) || 0
-      }))
-      await supabase.from('suppliers').upsert(formattedSuppliers)
-
-      // 5. Upload Sales and Sale Items
-      const formattedSales = []
-      const formattedSaleItems = []
-
-      sales.forEach(s => {
-        const saleId = (s.id && s.id.length === 36) ? s.id : generateUUID()
-        formattedSales.push({
-          id: saleId,
-          invoice_number: s.invoice_number,
-          customer_name: s.customer_name,
-          customer_phone: s.customer_phone,
-          doctor_name: s.doctor_name,
-          subtotal: parseFloat(s.subtotal) || 0,
-          discount_amount: parseFloat(s.discount_amount) || 0,
-          tax_amount: parseFloat(s.tax_amount) || 0,
-          grand_total: parseFloat(s.grand_total) || 0,
-          payment_mode: s.payment_mode || 'Cash',
-          payment_status: s.payment_status || 'Completed',
-          notes: s.notes || ''
-        })
-
-        if (s.items && Array.isArray(s.items)) {
-          s.items.forEach(item => {
-            formattedSaleItems.push({
-              id: generateUUID(),
-              sale_id: saleId,
-              batch_id: batchIdMap[item.batch_id] || (item.batch_id && item.batch_id.length === 36 ? item.batch_id : null),
-              medicine_name: item.medicine_name,
-              batch_number: item.batch_number,
-              expiry_date: item.expiry_date || null,
-              quantity: item.quantity,
-              unit_price: item.unit_price,
-              total_price: item.total_price
-            })
-          })
-        }
-      })
-
-      if (formattedSales.length > 0) {
-        await supabase.from('sales').upsert(formattedSales)
+      const payload = {
+        medicines,
+        batches,
+        patients,
+        suppliers,
+        requisitions,
+        sales
       }
-      if (formattedSaleItems.length > 0) {
-        await supabase.from('sale_items').upsert(formattedSaleItems)
-      }
-
-      // Refresh state
-      setMedicines(formattedMeds)
-      setBatches(formattedBatches)
-      setPatients(formattedPatients)
-      setSuppliers(formattedSuppliers)
-      setSupabaseConnected(true)
-
-      notify('Cloud Database Populated!', 'All medicines, batches, sales, and line items uploaded to Supabase!', 'success')
+      await apiSeedAllData(payload)
+      setBackendConnected(true)
+      notify('Database Populated!', 'All medicines, batches, sales, and records synced to PythonAnywhere MySQL!', 'success')
     } catch (err) {
-      console.error('Cloud upload error:', err)
-      notify('Upload Failed', err.message || 'Make sure all tables exist in Supabase first.', 'error')
+      console.error('PythonAnywhere seed error:', err)
+      notify('Sync Notice', err.message || 'Make sure PythonAnywhere MySQL is created and running.', 'error')
     } finally {
-      setSupabaseSyncing(false)
+      setBackendSyncing(false)
     }
   }
 
-  // Sync Data with Supabase Cloud
-  const syncWithSupabase = async () => {
-    setSupabaseSyncing(true)
+  // Sync Data with PythonAnywhere Cloud
+  const syncWithBackend = async () => {
+    setBackendSyncing(true)
     try {
-      const res = await checkSupabaseConnection()
+      const res = await checkBackendHealth()
       if (!res.connected) {
-        throw new Error(res.error || 'Cannot connect to Supabase. Check internet or run SQL script.')
+        throw new Error(res.error || 'Cannot connect to PythonAnywhere Flask API.')
       }
-
-      const ok = await fetchFromSupabase()
+      const ok = await fetchFromBackend()
       if (ok) {
-        setSupabaseConnected(true)
-        notify('Supabase Cloud Synced', 'Live records synced with Supabase PostgreSQL.', 'success')
+        setBackendConnected(true)
+        notify('Cloud Synced', 'Live records synced with PythonAnywhere Flask & MySQL.', 'success')
       }
     } catch (err) {
-      console.warn('Sync notice:', err.message)
-      notify('Supabase Notice', err.message, 'error')
+      notify('Connection Notice', err.message, 'warning')
     } finally {
-      setSupabaseSyncing(false)
+      setBackendSyncing(false)
     }
   }
 
-  // --- CRUD ACTIONS ---
+  // --- CRUD ACTIONS (SYNCS TO PYTHONANYWHERE FLASK API) ---
 
   // Add Medicine WITH initial Batch and Expiry Date
   const addMedicineWithBatch = async (medData, batchData) => {
@@ -364,27 +439,19 @@ export const AppProvider = ({ children }) => {
       setBatches(prev => [newBatch, ...prev])
     }
 
-    // Write to Supabase Cloud
+    // Sync to PythonAnywhere Flask API
     try {
-      const { data: mData, error: mError } = await supabase.from('medicines').insert([newMed]).select()
-      if (mError) {
-        console.error('Supabase Medicine Insert Error:', mError)
-      }
-
+      await apiCreateMedicine(newMed)
       if (newBatch) {
-        const { data: bData, error: bError } = await supabase.from('batches').insert([newBatch]).select()
-        if (bError) {
-          console.error('Supabase Batch Insert Error:', bError)
-        }
+        await apiCreateBatch(newBatch)
       }
-
       notify(
         'Medicine & Expiry Saved!',
-        `${newMed.name} (Batch: ${newBatch?.batch_number || 'N/A'}, Exp: ${newBatch?.expiry_date || 'N/A'}) saved to Supabase!`,
+        `${newMed.name} (Batch: ${newBatch?.batch_number || 'N/A'}) saved to PythonAnywhere!`,
         'success'
       )
     } catch (e) {
-      console.error('Cloud write exception:', e)
+      notify('Medicine Added', `${newMed.name} recorded in dispensary formulary.`, 'info')
     }
 
     return { medicine: newMed, batch: newBatch }
@@ -394,9 +461,9 @@ export const AppProvider = ({ children }) => {
   const updateMedicine = async (id, medData) => {
     setMedicines(prev => prev.map(m => m.id === id ? { ...m, ...medData } : m))
     try {
-      await supabase.from('medicines').update(medData).eq('id', id)
+      await apiUpdateMedicine(id, medData)
     } catch (e) {}
-    notify('Formulary Updated', `Medicine details updated in Supabase.`, 'success')
+    notify('Formulary Updated', `Medicine details updated.`, 'success')
   }
 
   // Delete Medicine
@@ -404,8 +471,7 @@ export const AppProvider = ({ children }) => {
     setMedicines(prev => prev.filter(m => m.id !== id))
     setBatches(prev => prev.filter(b => b.medicine_id !== id))
     try {
-      await supabase.from('medicines').delete().eq('id', id)
-      await supabase.from('batches').delete().eq('medicine_id', id)
+      await apiDeleteMedicine(id)
     } catch (e) {}
     notify('Medicine Removed', 'Item deleted from pharmacy stock.', 'warning')
   }
@@ -421,15 +487,10 @@ export const AppProvider = ({ children }) => {
       current_stock: parseInt(batchData.current_stock, 10) || 0
     }
     setBatches(prev => [newBatch, ...prev])
-
     try {
-      const { error } = await supabase.from('batches').insert([newBatch])
-      if (error) throw error
-    } catch (e) {
-      console.error('Supabase Batch Insert Error:', e)
-    }
-
-    notify('Stock Inward Added', `Batch ${newBatch.batch_number} recorded (+${newBatch.current_stock} units, Exp: ${newBatch.expiry_date}).`, 'success')
+      await apiCreateBatch(newBatch)
+    } catch (e) {}
+    notify('Stock Inward Added', `Batch ${newBatch.batch_number} recorded (+${newBatch.current_stock} units).`, 'success')
     return newBatch
   }
 
@@ -437,7 +498,7 @@ export const AppProvider = ({ children }) => {
   const updateBatch = async (batchId, updatedData) => {
     setBatches(prev => prev.map(b => b.id === batchId ? { ...b, ...updatedData } : b))
     try {
-      await supabase.from('batches').update(updatedData).eq('id', batchId)
+      await apiUpdateBatch(batchId, updatedData)
     } catch (e) {}
     notify('Batch Updated', 'Batch stock/expiry updated successfully.', 'success')
   }
@@ -458,13 +519,10 @@ export const AppProvider = ({ children }) => {
       created_at: new Date().toISOString()
     }
     setPatients(prev => [newPat, ...prev])
-
     try {
-      const { error } = await supabase.from('patients').insert([newPat])
-      if (error) console.error('Supabase Patient Insert Error:', error)
+      await apiCreatePatient(newPat)
     } catch (e) {}
-
-    notify('Patient Registered', `${newPat.name} (UHID: ${newPat.uhid}) registered in Supabase.`, 'success')
+    notify('Patient Registered', `${newPat.name} (UHID: ${newPat.uhid}) registered.`, 'success')
     return newPat
   }
 
@@ -482,13 +540,10 @@ export const AppProvider = ({ children }) => {
       created_at: new Date().toISOString()
     }
     setSuppliers(prev => [newSup, ...prev])
-
     try {
-      const { error } = await supabase.from('suppliers').insert([newSup])
-      if (error) console.error('Supabase Supplier Insert Error:', error)
+      await apiCreateSupplier(newSup)
     } catch (e) {}
-
-    notify('Supplier Added', `${newSup.company_name} registered in Supabase.`, 'success')
+    notify('Supplier Added', `${newSup.company_name} registered.`, 'success')
     return newSup
   }
 
@@ -508,12 +563,9 @@ export const AppProvider = ({ children }) => {
       created_at: new Date().toISOString()
     }
     setRequisitions(prev => [newReq, ...prev])
-
     try {
-      const { error } = await supabase.from('hospital_requisitions').insert([newReq])
-      if (error) console.error('Supabase Requisition Insert Error:', error)
+      await apiCreateRequisition(newReq)
     } catch (e) {}
-
     notify('Drug Requisition Issued', `Requisition #${newReq.requisition_no} dispatched to ${newReq.department}.`, 'success')
     return newReq
   }
@@ -522,9 +574,9 @@ export const AppProvider = ({ children }) => {
   const updateRequisitionStatus = async (id, status) => {
     setRequisitions(prev => prev.map(r => r.id === id ? { ...r, status } : r))
     try {
-      await supabase.from('hospital_requisitions').update({ status }).eq('id', id)
+      await apiUpdateRequisitionStatus(id, status)
     } catch (e) {}
-    notify('Status Updated', `Requisition status marked as ${status}.`, 'info')
+    notify('Status Updated', `Requisition marked as ${status}.`, 'info')
   }
 
   // --- POS CART ACTIONS ---
@@ -592,7 +644,11 @@ export const AppProvider = ({ children }) => {
 
   const clearCart = () => {
     setCart([])
-    setDiscountPercent(0)
+    if (currentUser?.role === 'pharmacist') {
+      setDiscountPercent(preApprovedDiscount?.percent || 0)
+    } else {
+      setDiscountPercent(0)
+    }
   }
 
   // Calculate POS Totals
@@ -644,16 +700,12 @@ export const AppProvider = ({ children }) => {
       items: saleItems
     }
 
-    // 1. Deduct stock from batches locally & on Supabase
+    // 1. Deduct stock from batches locally & on PythonAnywhere backend
     setBatches(prev =>
       prev.map(b => {
         const cartItem = cart.find(ci => ci.batch_id === b.id)
         if (cartItem) {
           const updatedStock = Math.max(0, b.current_stock - cartItem.quantity)
-          // update cloud stock if valid UUID
-          if (b.id && b.id.length === 36) {
-            supabase.from('batches').update({ current_stock: updatedStock }).eq('id', b.id).then(() => {})
-          }
           return { ...b, current_stock: updatedStock }
         }
         return b
@@ -667,39 +719,14 @@ export const AppProvider = ({ children }) => {
     setCart([])
     setActiveInvoice(newSale)
 
-    // 4. Cloud Write: Write to `sales` AND `sale_items`
+    // 4. Cloud Write to PythonAnywhere Flask API & MySQL
     try {
-      const { error: sErr } = await supabase.from('sales').insert([{
-        id: saleId,
-        invoice_number: newSale.invoice_number,
-        customer_name: newSale.customer_name,
-        customer_phone: newSale.customer_phone,
-        doctor_name: newSale.doctor_name,
-        subtotal: newSale.subtotal,
-        discount_amount: newSale.discount_amount,
-        tax_amount: newSale.tax_amount,
-        grand_total: newSale.grand_total,
-        payment_mode: newSale.payment_mode,
-        payment_status: newSale.payment_status,
-        notes: newSale.notes
-      }])
-
-      if (sErr) {
-        console.error('Supabase sales insert error:', sErr)
-      } else {
-        // Insert into sale_items table
-        const { error: siErr } = await supabase.from('sale_items').insert(saleItems)
-        if (siErr) {
-          console.error('Supabase sale_items insert error:', siErr)
-        } else {
-          console.log('Supabase sale_items saved successfully:', saleItems)
-        }
-      }
+      await apiCreateSale(newSale)
+      notify('Invoice Generated!', `Invoice #${newSale.invoice_number} saved to PythonAnywhere MySQL for ₹${newSale.grand_total.toFixed(2)}.`, 'success')
     } catch (e) {
-      console.warn('Cloud sales sync error:', e)
+      notify('Invoice Generated (Local)', `Invoice #${newSale.invoice_number} saved locally for ₹${newSale.grand_total.toFixed(2)}.`, 'info')
     }
 
-    notify('Invoice Generated!', `Invoice #${newSale.invoice_number} saved to Supabase (including ${saleItems.length} line items) for ₹${newSale.grand_total.toFixed(2)}.`, 'success')
     return newSale
   }
 
@@ -732,6 +759,16 @@ export const AppProvider = ({ children }) => {
   const criticalExpiryCount = expiringBatches.filter(b => b.status === 'critical').length
   const totalSalesRevenue = sales.reduce((acc, s) => acc + (s.grand_total || 0), 0)
 
+  // Role permissions
+  const currentRole = ROLES[currentUser?.role] || ROLES.pharmacist
+  const isReadOnly = Boolean(currentRole.isReadOnly)
+  const canEdit = Boolean(currentRole.canEdit)
+  const canAddMedicine = Boolean(currentRole.canAddMedicine)
+  const canDeleteMedicine = Boolean(currentRole.canDeleteMedicine)
+  const canManageUsers = Boolean(currentRole.canManageUsers)
+  const canApplyDiscount = Boolean(currentRole.canApplyDiscount)
+  const canBill = Boolean(currentRole.canBill)
+
   return (
     <AppContext.Provider
       value={{
@@ -752,14 +789,18 @@ export const AppProvider = ({ children }) => {
         setDiscountPercent,
         activeInvoice,
         setActiveInvoice,
-        supabaseConnected,
-        supabaseSyncing,
+        backendConnected,
+        backendSyncing,
+        supabaseConnected: backendConnected, // alias for backwards compatibility
+        supabaseSyncing: backendSyncing,
         syncMessage,
         notifications,
         notify,
         dismissNotification,
-        syncWithSupabase,
-        pushAllLocalDataToSupabase,
+        syncWithBackend,
+        syncWithSupabase: syncWithBackend,
+        pushAllLocalDataToBackend,
+        pushAllLocalDataToSupabase: pushAllLocalDataToBackend,
         addMedicineWithBatch,
         updateMedicine,
         deleteMedicine,
@@ -783,7 +824,30 @@ export const AppProvider = ({ children }) => {
         expiringBatches,
         expiredCount,
         criticalExpiryCount,
-        totalSalesRevenue
+        totalSalesRevenue,
+        // Authentication & Role Permissions
+        ROLES,
+        users,
+        currentUser,
+        currentRole,
+        isReadOnly,
+        canEdit,
+        canAddMedicine,
+        canDeleteMedicine,
+        canManageUsers,
+        canApplyDiscount,
+        canBill,
+        preApprovedDiscount,
+        updatePreApprovedDiscount,
+        login,
+        quickSwitchUser,
+        logout,
+        addUser,
+        deleteUser,
+        isAuthModalOpen,
+        setIsAuthModalOpen,
+        isUserManagementModalOpen,
+        setIsUserManagementModalOpen
       }}
     >
       {children}

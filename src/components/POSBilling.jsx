@@ -26,7 +26,9 @@ import {
   Layers,
   ChevronDown,
   ChevronUp,
-  FileText
+  FileText,
+  Lock,
+  Eye
 } from 'lucide-react'
 
 export const POSBilling = () => {
@@ -49,7 +51,13 @@ export const POSBilling = () => {
     cartTaxAmount,
     cartGrandTotal,
     completeSale,
-    setActiveInvoice
+    setActiveInvoice,
+    currentUser,
+    currentRole,
+    canApplyDiscount,
+    isReadOnly,
+    preApprovedDiscount,
+    updatePreApprovedDiscount
   } = useApp()
 
   const [searchQuery, setSearchQuery] = useState('')
@@ -486,27 +494,89 @@ export const POSBilling = () => {
               {cart.length > 0 && (
                 <div className="pt-3 border-t border-slate-100 space-y-2.5 text-xs">
                   
-                  {/* Discount Selector */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-600 font-medium flex items-center gap-1">
-                      <Percent className="w-3.5 h-3.5 text-teal-600" />
-                      Clinical Discount
-                    </span>
-                    <div className="flex items-center gap-1.5">
-                      {[0, 5, 10, 15].map((d) => (
-                        <button
-                          key={d}
-                          onClick={() => setDiscountPercent(d)}
-                          className={`px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold transition-colors cursor-pointer ${
-                            discountPercent === d
-                              ? 'bg-teal-600 text-white'
-                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                          }`}
-                        >
-                          {d}%
-                        </button>
-                      ))}
-                    </div>
+                  {/* Role-Aware Clinical Discount Control */}
+                  <div className="space-y-2">
+                    {currentUser?.role === 'pharmacist' ? (
+                      /* Pharmacist View: Locked from manual alteration, reflects pre-approved discount */
+                      <div className="p-2.5 rounded-xl bg-slate-100 border border-slate-200">
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-700 font-bold flex items-center gap-1.5 text-xs">
+                            <Lock className="w-3.5 h-3.5 text-slate-500" />
+                            Pre-Authorized Clinical Discount
+                          </span>
+                          <span className="px-2.5 py-0.5 rounded-lg font-mono font-black bg-teal-100 text-teal-900 text-xs border border-teal-300">
+                            {discountPercent}%
+                          </span>
+                        </div>
+                        <div className="text-[10px] text-slate-500 mt-1 flex items-center justify-between">
+                          <span>Authorized by: <strong className="text-slate-700">{preApprovedDiscount?.appliedBy || 'Medical Officer (MO)'}</strong></span>
+                          <span className="text-amber-700 font-bold font-mono">🔒 Locked (Dispensary)</span>
+                        </div>
+                      </div>
+                    ) : isReadOnly ? (
+                      /* Supervisor Viewer View */
+                      <div className="p-2 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-800 flex items-center justify-between">
+                        <span className="font-bold flex items-center gap-1">
+                          <Eye className="w-3.5 h-3.5 text-amber-600" />
+                          Discount Applied:
+                        </span>
+                        <span className="font-mono font-bold">{discountPercent}%</span>
+                      </div>
+                    ) : (
+                      /* MO Doctor & Super Admin View: Full Control to Apply & Authorize Pack Discounts */
+                      <div className="p-2.5 rounded-xl bg-teal-50/70 border border-teal-200 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-teal-950 font-bold flex items-center gap-1.5 text-xs">
+                            <Percent className="w-3.5 h-3.5 text-teal-700" />
+                            {currentUser?.role === 'doctor_mo' ? "Doctor's Clinical Discount Authority" : "Admin Clinical Discount"}
+                          </span>
+                          <span className="font-mono font-black text-xs text-teal-900 bg-teal-100 px-2 py-0.5 rounded border border-teal-300">
+                            {discountPercent}%
+                          </span>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {[0, 5, 10, 15, 20, 25].map((d) => (
+                            <button
+                              key={d}
+                              onClick={() => setDiscountPercent(d)}
+                              className={`px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold transition-colors cursor-pointer ${
+                                discountPercent === d
+                                  ? 'bg-teal-700 text-white shadow-xs'
+                                  : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                              }`}
+                            >
+                              {d}%
+                            </button>
+                          ))}
+
+                          {/* Complete Pack Discount Shortcut */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const packVal = 15
+                              setDiscountPercent(packVal)
+                              updatePreApprovedDiscount(packVal, "Doctor's Complete Pack Medicine Discount")
+                            }}
+                            className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white shadow-xs cursor-pointer"
+                            title="Apply standard 15% complete package discount and sync to dispensary"
+                          >
+                            + Complete Pack (15%)
+                          </button>
+                        </div>
+
+                        <div className="text-[10px] text-teal-800/80 flex items-center justify-between pt-1 border-t border-teal-200/60">
+                          <span>Changing this updates bill & syncs to dispensary</span>
+                          <button
+                            type="button"
+                            onClick={() => updatePreApprovedDiscount(discountPercent, 'Clinical Pack Authorized')}
+                            className="text-teal-800 font-bold hover:underline cursor-pointer"
+                          >
+                            Push to Pharmacist ➔
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Subtotal */}
@@ -569,13 +639,20 @@ export const POSBilling = () => {
                   </div>
 
                   {/* Checkout Button */}
-                  <button
-                    onClick={handleCheckout}
-                    className="w-full mt-3 py-3.5 rounded-xl bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-500 hover:to-teal-600 text-white font-black text-sm uppercase tracking-wider shadow-md shadow-teal-700/20 flex items-center justify-center gap-2 active:scale-98 transition-all cursor-pointer"
-                  >
-                    <Printer className="w-4 h-4" />
-                    <span>Process & Print Invoice (₹{cartGrandTotal.toFixed(2)})</span>
-                  </button>
+                  {isReadOnly ? (
+                    <div className="w-full mt-3 py-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold text-center flex items-center justify-center gap-2">
+                      <Eye className="w-4 h-4 text-amber-600" />
+                      <span>Supervisor Audit Mode: Billing Execution Disabled</span>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={handleCheckout}
+                      className="w-full mt-3 py-3.5 rounded-xl bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-500 hover:to-teal-600 text-white font-black text-sm uppercase tracking-wider shadow-md shadow-teal-700/20 flex items-center justify-center gap-2 active:scale-98 transition-all cursor-pointer"
+                    >
+                      <Printer className="w-4 h-4" />
+                      <span>Process & Print Invoice (₹{cartGrandTotal.toFixed(2)})</span>
+                    </button>
+                  )}
 
                 </div>
               )}

@@ -15,7 +15,7 @@ import {
 } from 'lucide-react'
 
 export const Patients = ({ onOpenPatientModal }) => {
-  const { patients, sales, setActiveInvoice } = useApp()
+  const { patients, sales, setActiveInvoice, isReadOnly } = useApp()
   const [searchQuery, setSearchQuery] = useState('')
 
   const filteredPatients = patients.filter(p =>
@@ -40,13 +40,15 @@ export const Patients = ({ onOpenPatientModal }) => {
           </p>
         </div>
 
-        <button
-          onClick={onOpenPatientModal}
-          className="flex items-center gap-2 bg-gradient-to-r from-sky-600 to-teal-600 hover:from-sky-500 hover:to-teal-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm shadow-md active:scale-95 transition-all"
-        >
-          <UserPlus className="w-4 h-4" />
-          <span>+ Register New Patient</span>
-        </button>
+        {!isReadOnly && (
+          <button
+            onClick={onOpenPatientModal}
+            className="flex items-center gap-2 bg-gradient-to-r from-sky-600 to-teal-600 hover:from-sky-500 hover:to-teal-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm shadow-md active:scale-95 transition-all cursor-pointer"
+          >
+            <UserPlus className="w-4 h-4" />
+            <span>+ Register New Patient</span>
+          </button>
+        )}
       </div>
 
       {/* Search Bar */}
