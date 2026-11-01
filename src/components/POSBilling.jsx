@@ -627,9 +627,13 @@ export const POSBilling = () => {
                     <span>₹{cartSubtotal.toFixed(2)}</span>
                   </div>
 
-                  {discountPercent > 0 && (
+                  {cartDiscountAmount > 0 && (
                     <div className="flex justify-between text-emerald-700 font-mono font-bold">
-                      <span>Discount ({discountPercent}%):</span>
+                      <span>
+                        {discountPercent > 0
+                          ? `Clinical Pack Discount (${discountPercent}%):`
+                          : 'Pre-Approved Medicine Discount:'}
+                      </span>
                       <span>-₹{cartDiscountAmount.toFixed(2)}</span>
                     </div>
                   )}

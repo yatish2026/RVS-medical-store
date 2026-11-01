@@ -489,18 +489,23 @@ export const AppProvider = ({ children }) => {
       min_stock_alert: parseInt(medData.min_stock_alert, 10) || 20,
       prescription_required: true,
       hsn_code: medData.hsn_code || '30049099',
-      gst_rate: parseFloat(medData.gst_rate) || 12.00
+      gst_rate: parseFloat(medData.gst_rate) || 12.00,
+      default_discount_percent: parseFloat(medData.default_discount_percent) || 0
     }
 
+    const defaultExp = new Date()
+    defaultExp.setFullYear(defaultExp.getFullYear() + 2)
+    const defaultExpStr = `${defaultExp.getFullYear()}-${String(defaultExp.getMonth() + 1).padStart(2, '0')}-${String(defaultExp.getDate()).padStart(2, '0')}`
+
     let newBatch = null
-    if (batchData && batchData.expiry_date) {
+    if (batchData) {
       newBatch = {
         id: generateUUID(),
         medicine_id: medId,
-        batch_number: batchData.batch_number || `B-${Math.floor(1000 + Math.random() * 9000)}`,
-        expiry_date: batchData.expiry_date,
+        batch_number: (batchData.batch_number || '').trim() || `B-${Math.floor(1000 + Math.random() * 9000)}`,
+        expiry_date: batchData.expiry_date || defaultExpStr,
         cost_price: parseFloat(batchData.cost_price) || 0,
-        mrp: parseFloat(batchData.mrp) || 0,
+        mrp: parseFloat(batchData.mrp) || parseFloat(batchData.selling_price) || 0,
         selling_price: parseFloat(batchData.selling_price) || parseFloat(batchData.mrp) || 0,
         current_stock: parseInt(batchData.current_stock, 10) || 0,
         supplier_name: batchData.supplier_name || 'Standard Distributor'
@@ -513,22 +518,18 @@ export const AppProvider = ({ children }) => {
       setBatches(prev => [newBatch, ...prev])
     }
 
-    // Sync to PythonAnywhere Flask API
-    if (backendConnected) {
-      try {
-        await apiCreateMedicine(newMed)
-        if (newBatch) {
-          await apiCreateBatch(newBatch)
-        }
-        notify(
-          'Medicine & Expiry Saved!',
-          `${newMed.name} (Batch: ${newBatch?.batch_number || 'N/A'}) saved to PythonAnywhere!`,
-          'success'
-        )
-      } catch (e) {
-        notify('Medicine Added', `${newMed.name} recorded in dispensary formulary.`, 'info')
+    // Always persist to local shared database
+    try {
+      await apiCreateMedicine(newMed)
+      if (newBatch) {
+        await apiCreateBatch(newBatch)
       }
-    } else {
+      notify(
+        'Medicine & Stock Saved!',
+        `${newMed.name} (Batch: ${newBatch?.batch_number || 'N/A'}, Stock: ${newBatch?.current_stock || 0}) added to dispensary!`,
+        'success'
+      )
+    } catch (e) {
       notify('Medicine Added', `${newMed.name} recorded in dispensary formulary.`, 'info')
     }
 

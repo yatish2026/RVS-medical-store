@@ -156,7 +156,7 @@ export const MedicineModal = ({ isOpen, onClose, initialData = null, targetMedic
   if (!isOpen) return null
 
   const canEditPricing = isMoOrAdmin || !isEditMedicine
-  const canEditStock = isMoOrAdmin || canEdit || !isEditMedicine
+  const canEditStock = isMoOrAdmin || !isEditMedicine
 
   const handleSubmit = (e) => {
     e.preventDefault()
