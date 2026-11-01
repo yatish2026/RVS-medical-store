@@ -889,6 +889,8 @@ export const AppProvider = ({ children }) => {
   const canDeleteMedicine = Boolean(currentRole.canDeleteMedicine)
   const canManageUsers = Boolean(currentRole.canManageUsers)
   const canApplyDiscount = Boolean(currentRole.canApplyDiscount)
+  const canBill = Boolean(currentRole.canBill)
+
   // Super Admin: Reset all clinical data to empty clean slate
   const clearAllData = () => {
     if (currentUser?.role !== 'admin_supervisor') {

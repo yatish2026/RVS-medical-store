@@ -152,8 +152,9 @@ export const Patients = ({ onOpenPatientModal }) => {
               </div>
             </div>
           )
-        }))}
-      </div>
+        })
+      )}
+    </div>
 
     </div>
   )

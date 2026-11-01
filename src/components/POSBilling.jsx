@@ -346,8 +346,9 @@ export const POSBilling = () => {
                     )}
                   </div>
                 )
-              }))}
-            </div>
+              })
+            )}
+          </div>
 
             {/* Mobile Floating Cart Summary Button */}
             {cart.length > 0 && activePosView === 'catalog' && (
