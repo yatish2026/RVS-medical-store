@@ -16,7 +16,8 @@ import {
   AlertCircle,
   Stethoscope,
   Eye,
-  Pill
+  Pill,
+  LogIn
 } from 'lucide-react'
 
 export const UserManagementModal = () => {
@@ -27,6 +28,7 @@ export const UserManagementModal = () => {
     currentUser,
     addUser,
     deleteUser,
+    quickSwitchUser,
     ROLES,
     preApprovedDiscount,
     updatePreApprovedDiscount
@@ -369,23 +371,43 @@ export const UserManagementModal = () => {
                               </span>
                             </td>
                             <td className="py-2.5 px-3 text-right">
-                              {!isSelf && users.length > 1 ? (
-                                <button
-                                  onClick={() => {
-                                    if (window.confirm(`Delete user "${u.name}"?`)) {
-                                      deleteUser(u.id)
-                                    }
-                                  }}
-                                  className="p-1.5 text-rose-600 hover:text-rose-800 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                                  title="Delete user"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              ) : (
-                                <span className="text-[10px] text-slate-400 font-mono italic">
-                                  Active
-                                </span>
-                              )}
+                              <div className="flex items-center justify-end gap-1.5">
+                                {!isSelf ? (
+                                  <>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        quickSwitchUser(u.id)
+                                        setIsUserManagementModalOpen(false)
+                                      }}
+                                      className="flex items-center gap-1 px-2.5 py-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-lg text-xs font-bold shadow-2xs transition-all cursor-pointer active:scale-95"
+                                      title={`Open ${u.name}'s account and operate as ${role.shortLabel}`}
+                                    >
+                                      <LogIn className="w-3 h-3" />
+                                      <span>Open Account</span>
+                                    </button>
+
+                                    {users.length > 1 && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          if (window.confirm(`Delete user "${u.name}"?`)) {
+                                            deleteUser(u.id)
+                                          }
+                                        }}
+                                        className="p-1.5 text-rose-600 hover:text-rose-800 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                        title={`Delete user ${u.name}`}
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    )}
+                                  </>
+                                ) : (
+                                  <span className="text-[10px] font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-md">
+                                    Current Active
+                                  </span>
+                                )}
+                              </div>
                             </td>
                           </tr>
                         )

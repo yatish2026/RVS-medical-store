@@ -23,6 +23,7 @@ export const Header = ({ onOpenMedicineModal, onOpenPatientModal, onOpenPdfModal
     currentRole,
     canAddMedicine,
     canManageUsers,
+    quickSwitchUser,
     setIsAuthModalOpen,
     setIsUserManagementModalOpen,
     logout
@@ -150,6 +151,19 @@ export const Header = ({ onOpenMedicineModal, onOpenPatientModal, onOpenPdfModal
               >
                 <ShieldCheck className="w-4 h-4 text-purple-600" />
                 <span>Users & Roles</span>
+              </button>
+            )}
+
+            {/* Switched Staff Mode: Quick One-Click Return to Super Admin */}
+            {currentUser?.role !== 'admin_supervisor' && currentUser?.username !== 'admin' && (
+              <button
+                onClick={() => quickSwitchUser('user-admin')}
+                title="Exit staff role and switch back to Super Admin (Dr. Yatish)"
+                className="flex items-center gap-1.5 bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-600 hover:to-indigo-600 text-white border border-purple-400 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-md shadow-purple-900/20 cursor-pointer active:scale-95 animate-pulse"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-purple-200" />
+                <span className="hidden sm:inline">Return to Super Admin</span>
+                <span className="sm:hidden">Admin</span>
               </button>
             )}
 

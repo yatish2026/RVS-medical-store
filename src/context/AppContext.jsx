@@ -88,7 +88,7 @@ export const AppProvider = ({ children }) => {
     if (saved) {
       try {
         const parsed = JSON.parse(saved)
-        if (parsed && (parsed.username === 'admin' || parsed.role === 'admin_supervisor')) {
+        if (parsed && parsed.id && parsed.username) {
           return parsed
         }
       } catch (e) {
@@ -269,8 +269,13 @@ export const AppProvider = ({ children }) => {
   }
 
   const quickSwitchUser = (userIdOrRole) => {
-    const user = users.find(u => u.id === userIdOrRole || u.role === userIdOrRole)
+    const user = users.find(
+      u => u.id === userIdOrRole ||
+           u.role === userIdOrRole ||
+           u.username?.toLowerCase() === String(userIdOrRole).toLowerCase()
+    )
     if (user) {
+      localStorage.setItem('rvs_current_user', JSON.stringify(user))
       setCurrentUser(user)
       const roleInfo = ROLES[user.role] || ROLES.pharmacist
       notify(`Role Switched: ${roleInfo.shortLabel}`, `Active profile: ${user.name}. Permissions updated.`, 'success')
