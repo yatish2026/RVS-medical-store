@@ -53,6 +53,7 @@ def init_db():
             prescription_required INTEGER DEFAULT 1,
             hsn_code TEXT DEFAULT '30049099',
             gst_rate REAL DEFAULT 12.0,
+            default_discount_percent REAL DEFAULT 0.0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
 
@@ -164,6 +165,12 @@ def init_db():
             INSERT INTO clinical_discount_policy (id, discount_percent, authorized_by, reason)
             VALUES (1, 0.0, 'None', 'Standard Bill Rate (No Discount Set)')
         """)
+
+    # Ensure default_discount_percent column exists in medicines
+    try:
+        cursor.execute("ALTER TABLE medicines ADD COLUMN default_discount_percent REAL DEFAULT 0.0")
+    except Exception:
+        pass
 
     conn.commit()
     conn.close()
@@ -311,14 +318,15 @@ def handle_medicines():
         data = request.json or {}
         med_id = data.get("id") or str(uuid.uuid4())
         cursor.execute("""
-            INSERT OR REPLACE INTO medicines (id, name, generic_name, category, dosage_form, strength, manufacturer, shelf_location, min_stock_alert, prescription_required, hsn_code, gst_rate)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT OR REPLACE INTO medicines (id, name, generic_name, category, dosage_form, strength, manufacturer, shelf_location, min_stock_alert, prescription_required, hsn_code, gst_rate, default_discount_percent)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             med_id, data.get("name"), data.get("generic_name", ""), data.get("category", "General"),
             data.get("dosage_form", "Tablet"), data.get("strength", ""), data.get("manufacturer", ""),
             data.get("shelf_location", "Rack A-01"), int(data.get("min_stock_alert") or 20),
             1 if data.get("prescription_required", True) else 0, data.get("hsn_code", "30049099"),
-            float(data.get("gst_rate") or 12.0)
+            float(data.get("gst_rate") or 12.0),
+            float(data.get("default_discount_percent") or 0.0)
         ))
         conn.commit()
         conn.close()
@@ -344,12 +352,14 @@ def medicine_detail(med_id):
     data = request.json or {}
     cursor.execute("""
         UPDATE medicines SET name=?, generic_name=?, category=?, dosage_form=?,
-        strength=?, manufacturer=?, shelf_location=?, min_stock_alert=?, gst_rate=?
+        strength=?, manufacturer=?, shelf_location=?, min_stock_alert=?, gst_rate=?,
+        default_discount_percent=?
         WHERE id=?
     """, (
         data.get("name"), data.get("generic_name"), data.get("category"), data.get("dosage_form"),
         data.get("strength"), data.get("manufacturer"), data.get("shelf_location"),
-        int(data.get("min_stock_alert") or 20), float(data.get("gst_rate") or 12.0), med_id
+        int(data.get("min_stock_alert") or 20), float(data.get("gst_rate") or 12.0),
+        float(data.get("default_discount_percent") or 0.0), med_id
     ))
     conn.commit()
     conn.close()
@@ -590,11 +600,12 @@ def seed_all():
         # Seed medicines
         for m in data.get("medicines", []):
             cursor.execute("""
-                INSERT OR REPLACE INTO medicines (id, name, generic_name, category, dosage_form, strength, manufacturer, shelf_location, min_stock_alert, gst_rate)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT OR REPLACE INTO medicines (id, name, generic_name, category, dosage_form, strength, manufacturer, shelf_location, min_stock_alert, gst_rate, default_discount_percent)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (m.get("id"), m.get("name"), m.get("generic_name", ""), m.get("category", "General"),
                   m.get("dosage_form", "Tablet"), m.get("strength", ""), m.get("manufacturer", ""),
-                  m.get("shelf_location", "Rack A-01"), int(m.get("min_stock_alert") or 20), float(m.get("gst_rate") or 12.0)))
+                  m.get("shelf_location", "Rack A-01"), int(m.get("min_stock_alert") or 20), float(m.get("gst_rate") or 12.0),
+                  float(m.get("default_discount_percent") or 0.0)))
 
         # Seed batches
         for b in data.get("batches", []):

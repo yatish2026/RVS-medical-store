@@ -87,11 +87,23 @@ In the **Static Files** section of the Web tab, add two entries:
 
 ---
 
+## 🔄 Updating to the Latest Version (Whenever You Push Code)
+If you have already configured the app once and want to fetch the latest updates:
+1. Open your **$ Bash** console on PythonAnywhere.
+2. Run:
+   ```bash
+   cd ~/RVS-medical-store
+   git pull origin main
+   ```
+3. Go to the **Web** tab and click **Reload yatish.pythonanywhere.com**. That's it! Everything is live.
+
+---
+
 ## 🔑 Default Staff Credentials for Testing Roles
 
-| Role | Username | Password | Privileges |
+| Role | Username | Password | Privileges & Discount Rules |
 |---|---|---|---|
-| **Super Admin** | `admin` | `admin123` | Full access + Create staff logins & assign roles |
-| **Medical Officer (Doctor / MO)** | `doctor_mo` | `doc123` | Prescribe medicines + Apply complete pack clinical discounts |
-| **Supervisor (Read-Only / Auditor)** | `supervisor` | `viewer123` | Audit mode only; all editing and billing checkout buttons are locked |
-| **Pharmacist (Dispensary)** | `pharmacist` | `pharma123` | Inward stock, add medicines, POS billing; **discount alteration locked** (reflects Doctor/Admin pre-approved discount) |
+| **Super Admin** | `admin` | `admin123` | **Full Authority**: Can set **Overall Bill Package Discount** AND **Individual Medicine Discounts** + User/Staff Role Admin |
+| **Medical Officer (Doctor / MO)** | `doctor_mo` | `doc123` | **Individual Medicine Discount Authority ONLY**: Can set custom % discounts per individual medicine formulary. (Overall bill package discount is strictly locked to Super Admin) |
+| **Supervisor (Read-Only / Auditor)** | `supervisor` | `viewer123` | **Audit mode only**: Read-only formulary and billing logs; all editing, discounting, and checkout buttons are locked |
+| **Pharmacist (Dispensary)** | `pharmacist` | `pharma123` | Inward stock, add medicines, POS billing; **discount alteration locked** (Terminal automatically calculates discounts approved by Doctor / Super Admin) |

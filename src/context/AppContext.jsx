@@ -329,8 +329,8 @@ export const AppProvider = ({ children }) => {
   }
 
   const updatePreApprovedDiscount = async (percent, reason = 'Authorized Clinical Discount') => {
-    if (currentUser?.role !== 'admin_supervisor' && currentUser?.role !== 'doctor_mo') {
-      notify('Permission Restricted', 'Only Medical Officer (MO) or Super Admin can authorize clinical discounts.', 'error')
+    if (currentUser?.role !== 'admin_supervisor') {
+      notify('Permission Restricted', 'Only Super Admin can authorize overall bill package discounts. Medical Officers can set individual medicine discounts.', 'error')
       return false
     }
     const num = Math.max(0, Math.min(100, Number(percent) || 0))
