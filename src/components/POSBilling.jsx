@@ -28,10 +28,18 @@ import {
   ChevronUp,
   FileText,
   Lock,
-  Eye
+  Eye,
+  HeartPulse,
+  Activity,
+  Droplets,
+  ShieldAlert,
+  Pill,
+  RotateCcw,
+  FileUp,
+  SearchX
 } from 'lucide-react'
 
-export const POSBilling = () => {
+export const POSBilling = ({ onOpenMedicineModal, onOpenPdfModal }) => {
   const {
     medicines,
     batches,
@@ -48,6 +56,9 @@ export const POSBilling = () => {
     setDiscountPercent,
     cartSubtotal,
     cartDiscountAmount,
+    cartItemDiscountTotal,
+    cartGlobalDiscountAmount,
+    isOverallDiscountActive,
     cartTaxAmount,
     cartGrandTotal,
     isGstActive,
@@ -89,10 +100,19 @@ export const POSBilling = () => {
 
     let matchesCategory = true
     if (selectedCategory !== 'ALL') {
+      const medCat = (med.category || '').toLowerCase()
       if (selectedCategory === 'Fast Movers') {
-        matchesCategory = med.category.includes('Analgesics') || med.category.includes('Antibiotics')
+        matchesCategory = medCat.includes('analgesic') || medCat.includes('antibiotic')
+      } else if (selectedCategory === 'Cardiac') {
+        matchesCategory = medCat.includes('cardiac') || medCat.includes('cardio')
+      } else if (selectedCategory === 'Diabetics') {
+        matchesCategory = medCat.includes('diabet') || medCat.includes('insulin')
+      } else if (selectedCategory === 'Analgesics') {
+        matchesCategory = medCat.includes('analgesic') || medCat.includes('pain')
+      } else if (selectedCategory === 'IV Fluids') {
+        matchesCategory = medCat.includes('fluid') || medCat.includes('infusion') || medCat.includes('iv')
       } else {
-        matchesCategory = med.category.toLowerCase().includes(selectedCategory.toLowerCase())
+        matchesCategory = medCat.includes(selectedCategory.toLowerCase())
       }
     }
 
@@ -275,13 +295,135 @@ export const POSBilling = () => {
             {/* Medicines Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[calc(100vh-19rem)] overflow-y-auto pr-1">
               {filteredMedicines.length === 0 ? (
-                <div className="col-span-full clinical-card p-10 rounded-3xl text-center text-slate-500 my-4 border border-dashed border-slate-300">
-                  <Pill className="w-10 h-10 text-teal-600/40 mx-auto mb-2" />
-                  <h4 className="font-extrabold text-slate-800 text-sm">Dispensary Stock is Empty</h4>
-                  <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
-                    No medicines in stock. Add your real medicines in Medicine Inventory or upload an invoice PDF to start billing.
-                  </p>
-                </div>
+                (() => {
+                  const isSearchActive = Boolean(searchQuery.trim())
+                  const isCategoryFilter = selectedCategory !== 'ALL'
+
+                  let icon = <Pill className="w-10 h-10 text-teal-600" />
+                  let title = 'Dispensary Stock is Empty'
+                  let description = 'No medicines currently available in dispensary stock. Please add your verified medicine stocks or upload an invoice PDF to start billing.'
+                  let badgeText = 'Formulary Empty'
+                  let badgeColor = 'bg-slate-100 text-slate-700 border-slate-300'
+                  let iconBg = 'bg-teal-50 border-teal-200 text-teal-600'
+                  let actionCategory = 'Antibiotics'
+
+                  if (isSearchActive) {
+                    icon = <SearchX className="w-10 h-10 text-amber-600" />
+                    title = `No Medicines Matching "${searchQuery}"`
+                    description = `No formulary item found matching "${searchQuery}". Check the spelling, try generic formula names, or add this new medicine.`
+                    badgeText = 'Search Filter Active'
+                    badgeColor = 'bg-amber-100 text-amber-800 border-amber-300'
+                    iconBg = 'bg-amber-50 border-amber-200 text-amber-600'
+                  } else if (isCategoryFilter) {
+                    if (selectedCategory === 'Cardiac') {
+                      icon = <HeartPulse className="w-10 h-10 text-rose-600" />
+                      title = 'No Cardiac Care Medicines in Stock'
+                      description = 'No medicines categorized under Cardiac / Cardiovascular are currently available. Click below to add Cardiac formulations (e.g. Atenolol, Amlodipine, Telmisartan).'
+                      badgeText = '❤️ Cardiac Category'
+                      badgeColor = 'bg-rose-100 text-rose-800 border-rose-300'
+                      iconBg = 'bg-rose-50 border-rose-200 text-rose-600'
+                      actionCategory = 'Cardiac & Cardiovascular'
+                    } else if (selectedCategory === 'Diabetics') {
+                      icon = <Activity className="w-10 h-10 text-sky-600" />
+                      title = 'No Diabetic Care Medicines in Stock'
+                      description = 'No medicines categorized under Diabetics / Antidiabetic are currently available. Click below to add Diabetic formulations (e.g. Metformin, Glimepiride, Insulin).'
+                      badgeText = '🩸 Diabetics Category'
+                      badgeColor = 'bg-sky-100 text-sky-800 border-sky-300'
+                      iconBg = 'bg-sky-50 border-sky-200 text-sky-600'
+                      actionCategory = 'Diabetics & Antidiabetic'
+                    } else if (selectedCategory === 'Antibiotics') {
+                      icon = <ShieldAlert className="w-10 h-10 text-emerald-600" />
+                      title = 'No Antibiotics in Stock'
+                      description = 'No antibiotic formulations currently in dispensary stock. Click below to inward antibiotics (e.g. Augmentin, Amoxicillin, Cefixime).'
+                      badgeText = '🛡️ Antibiotics Category'
+                      badgeColor = 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                      iconBg = 'bg-emerald-50 border-emerald-200 text-emerald-600'
+                      actionCategory = 'Antibiotics'
+                    } else if (selectedCategory === 'Analgesics') {
+                      icon = <Pill className="w-10 h-10 text-amber-600" />
+                      title = 'No Analgesics / Pain Relief in Stock'
+                      description = 'No analgesic or antipyretic formulations available in stock. Click below to add pain relief medicines (e.g. Paracetamol, Ibuprofen).'
+                      badgeText = '💊 Analgesics Category'
+                      badgeColor = 'bg-amber-100 text-amber-800 border-amber-300'
+                      iconBg = 'bg-amber-50 border-amber-200 text-amber-600'
+                      actionCategory = 'Analgesics & Antipyretics'
+                    } else if (selectedCategory === 'IV Fluids') {
+                      icon = <Droplets className="w-10 h-10 text-cyan-600" />
+                      title = 'No IV Fluids & Infusions in Stock'
+                      description = 'No IV Fluids or infusion bottles (Normal Saline, RL, DNS) currently available in dispensary stock. Click below to inward IV fluids.'
+                      badgeText = '💧 IV Fluids Category'
+                      badgeColor = 'bg-cyan-100 text-cyan-800 border-cyan-300'
+                      iconBg = 'bg-cyan-50 border-cyan-200 text-cyan-600'
+                      actionCategory = 'IV Fluids & Infusions'
+                    } else if (selectedCategory === 'Fast Movers') {
+                      icon = <Sparkles className="w-10 h-10 text-purple-600" />
+                      title = 'No Fast-Moving Medicines in Stock'
+                      description = 'No fast-moving formulations recorded in dispensary stock yet. Add regular OPD medicines to begin billing.'
+                      badgeText = '⚡ Fast Movers'
+                      badgeColor = 'bg-purple-100 text-purple-800 border-purple-300'
+                      iconBg = 'bg-purple-50 border-purple-200 text-purple-600'
+                      actionCategory = 'General Formulary'
+                    }
+                  }
+
+                  return (
+                    <div className="col-span-full clinical-card p-6 sm:p-8 rounded-3xl text-center space-y-3.5 my-2 border-2 border-dashed border-slate-300/90 bg-gradient-to-b from-white to-slate-50 shadow-xs">
+                      <div className={`w-16 h-16 rounded-2xl ${iconBg} border flex items-center justify-center mx-auto shadow-sm`}>
+                        {icon}
+                      </div>
+
+                      <div className="space-y-1 max-w-md mx-auto">
+                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-mono font-black border ${badgeColor}`}>
+                          {badgeText}
+                        </span>
+                        <h4 className="font-black text-slate-900 text-sm sm:text-base tracking-tight">
+                          {title}
+                        </h4>
+                        <p className="text-xs text-slate-500 leading-relaxed font-medium">
+                          {description}
+                        </p>
+                      </div>
+
+                      <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                        {onOpenMedicineModal && (
+                          <button
+                            type="button"
+                            onClick={() => onOpenMedicineModal(actionCategory)}
+                            className="flex items-center gap-1.5 bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-500 hover:to-teal-600 text-white font-extrabold px-3.5 py-2 rounded-xl text-xs shadow-xs active:scale-95 transition-all cursor-pointer"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>+ Add {isCategoryFilter ? selectedCategory : ''} Medicine</span>
+                          </button>
+                        )}
+
+                        {(isCategoryFilter || isSearchActive) && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedCategory('ALL')
+                              setSearchQuery('')
+                            }}
+                            className="flex items-center gap-1 bg-white hover:bg-slate-100 text-slate-700 font-bold px-3 py-2 rounded-xl text-xs border border-slate-300 shadow-2xs transition-all cursor-pointer"
+                          >
+                            <RotateCcw className="w-3 h-3 text-slate-500" />
+                            <span>Show All Stock</span>
+                          </button>
+                        )}
+
+                        {onOpenPdfModal && (
+                          <button
+                            type="button"
+                            onClick={onOpenPdfModal}
+                            className="flex items-center gap-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 font-bold px-3 py-2 rounded-xl text-xs border border-indigo-200 shadow-2xs transition-all cursor-pointer"
+                          >
+                            <FileUp className="w-3 h-3 text-indigo-600" />
+                            <span>Upload PDF</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })()
               ) : (
                 filteredMedicines.map((med) => {
                 const medBatches = batches.filter(b => b.medicine_id === med.id && b.current_stock > 0)
@@ -473,17 +615,31 @@ export const POSBilling = () => {
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <h5 className="font-extrabold text-xs text-slate-900 truncate">{item.medicine_name}</h5>
                           {item.discount_percent > 0 && (
-                            <span className="bg-emerald-100 text-emerald-800 text-[9px] font-mono font-extrabold px-1.5 py-0.2 rounded border border-emerald-300">
-                              -{item.discount_percent}% MO
-                            </span>
+                            isOverallDiscountActive ? (
+                              <span
+                                className="bg-amber-100 text-amber-800 text-[9px] font-mono font-bold px-1.5 py-0.2 rounded border border-amber-300"
+                                title={`Individual ${item.discount_percent}% discount is paused because overall bill discount (${discountPercent}%) is active`}
+                              >
+                                {item.discount_percent}% Indiv. (Paused)
+                              </span>
+                            ) : (
+                              <span className="bg-emerald-100 text-emerald-800 text-[9px] font-mono font-extrabold px-1.5 py-0.2 rounded border border-emerald-300">
+                                -{item.discount_percent}% Indiv. Active
+                              </span>
+                            )
                           )}
                         </div>
                         <div className="text-[10px] text-slate-500 font-mono flex items-center gap-1.5 sm:gap-2">
                           <span>Batch: {item.batch_number}</span>
                           <span>• ₹{item.unit_price}</span>
-                          {item.discount_percent > 0 && (
+                          {item.discount_percent > 0 && !isOverallDiscountActive && (
                             <span className="text-emerald-700 font-bold">
                               (Net: ₹{(item.unit_price * (1 - item.discount_percent / 100)).toFixed(2)})
+                            </span>
+                          )}
+                          {item.discount_percent > 0 && isOverallDiscountActive && (
+                            <span className="text-amber-700 font-medium">
+                              (Overall {discountPercent}% applies to bill)
                             </span>
                           )}
                         </div>
@@ -534,7 +690,7 @@ export const POSBilling = () => {
                         <div className="flex items-center justify-between">
                           <span className="text-slate-700 font-bold flex items-center gap-1.5 text-xs">
                             <Lock className="w-3.5 h-3.5 text-slate-500" />
-                            Pre-Authorized Clinical Discount
+                            Pre-Authorized Overall Bill Discount
                           </span>
                           <span className={`px-2.5 py-0.5 rounded-lg font-mono font-black text-xs border ${
                             discountPercent > 0 
@@ -544,15 +700,26 @@ export const POSBilling = () => {
                             {discountPercent}%
                           </span>
                         </div>
-                        <div className="text-[10px] text-slate-500 mt-1 flex items-center justify-between">
-                          <span>
-                            {discountPercent > 0 ? (
-                              <>Authorized by: <strong className="text-slate-700">{preApprovedDiscount?.appliedBy || 'Medical Officer (MO)'}</strong></>
-                            ) : (
-                              <span className="text-slate-600 font-medium">Standard Bill Rate (No Discount Set)</span>
-                            )}
-                          </span>
-                          <span className="text-amber-700 font-bold font-mono">🔒 Locked (Dispensary)</span>
+                        <div className="text-[10px] text-slate-500 mt-1 space-y-0.5">
+                          <div className="flex items-center justify-between">
+                            <span>
+                              {discountPercent > 0 ? (
+                                <>Authorized by: <strong className="text-slate-700">{preApprovedDiscount?.appliedBy || 'Medical Officer (MO)'}</strong></>
+                              ) : (
+                                <span className="text-slate-600 font-medium">Standard Bill Rate (No Overall Discount Set)</span>
+                              )}
+                            </span>
+                            <span className="text-amber-700 font-bold font-mono">🔒 Locked (Dispensary)</span>
+                          </div>
+                          {discountPercent > 0 ? (
+                            <div className="text-amber-800 font-semibold bg-amber-50/80 px-1.5 py-0.5 rounded border border-amber-200/80">
+                              ⏸️ Overall bill discount ({discountPercent}%) active. Individual medicine discounts paused.
+                            </div>
+                          ) : (
+                            <div className="text-emerald-700 font-semibold">
+                              ✅ Individual medicine discounts are active.
+                            </div>
+                          )}
                         </div>
                       </div>
                     ) : isReadOnly ? (
@@ -560,17 +727,17 @@ export const POSBilling = () => {
                       <div className="p-2 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-800 flex items-center justify-between">
                         <span className="font-bold flex items-center gap-1">
                           <Eye className="w-3.5 h-3.5 text-amber-600" />
-                          Discount Applied:
+                          Overall Discount Applied:
                         </span>
                         <span className="font-mono font-bold">{discountPercent}%</span>
                       </div>
                     ) : (
-                      /* MO Doctor & Super Admin View: Full Control to Apply & Authorize Pack Discounts */
+                      /* MO Doctor & Super Admin View: Full Control to Apply & Authorize Overall Bill Discounts */
                       <div className="p-2.5 rounded-xl bg-teal-50/70 border border-teal-200 space-y-2">
                         <div className="flex items-center justify-between">
                           <span className="text-teal-950 font-bold flex items-center gap-1.5 text-xs">
                             <Percent className="w-3.5 h-3.5 text-teal-700" />
-                            {currentUser?.role === 'doctor_mo' ? "Doctor's Clinical Discount Authority" : "Admin Clinical Discount"}
+                            {currentUser?.role === 'doctor_mo' ? "Doctor's Overall Bill Discount Authority" : "Admin Overall Bill Discount"}
                           </span>
                           <span className="font-mono font-black text-xs text-teal-900 bg-teal-100 px-2 py-0.5 rounded border border-teal-300">
                             {discountPercent}%
@@ -581,14 +748,17 @@ export const POSBilling = () => {
                           {[0, 5, 10, 15, 20, 25].map((d) => (
                             <button
                               key={d}
-                              onClick={() => setDiscountPercent(d)}
+                              onClick={() => {
+                                setDiscountPercent(d)
+                                updatePreApprovedDiscount(d, d > 0 ? 'Clinical Pack Authorized' : 'Standard Bill Rate (No Discount)')
+                              }}
                               className={`px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold transition-colors cursor-pointer ${
                                 discountPercent === d
                                   ? 'bg-teal-700 text-white shadow-xs'
                                   : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
                               }`}
                             >
-                              {d}%
+                              {d === 0 ? '0% (Standard)' : `${d}%`}
                             </button>
                           ))}
 
@@ -607,15 +777,21 @@ export const POSBilling = () => {
                           </button>
                         </div>
 
-                        <div className="text-[10px] text-teal-800/80 flex items-center justify-between pt-1 border-t border-teal-200/60">
-                          <span>Changing this updates bill & syncs to dispensary</span>
-                          <button
-                            type="button"
-                            onClick={() => updatePreApprovedDiscount(discountPercent, 'Clinical Pack Authorized')}
-                            className="text-teal-800 font-bold hover:underline cursor-pointer"
-                          >
-                            Push to Pharmacist ➔
-                          </button>
+                        <div className="text-[10px] text-teal-900/90 flex flex-col gap-1 pt-1 border-t border-teal-200/60">
+                          <div className="flex items-center justify-between">
+                            <span>
+                              {discountPercent > 0
+                                ? '⏸️ Overall discount active — Individual discounts paused'
+                                : '▶️ Overall discount 0% — Individual discounts active'}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => updatePreApprovedDiscount(discountPercent, 'Clinical Pack Authorized')}
+                              className="text-teal-800 font-bold hover:underline cursor-pointer"
+                            >
+                              Push to Pharmacist ➔
+                            </button>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -628,13 +804,20 @@ export const POSBilling = () => {
                   </div>
 
                   {cartDiscountAmount > 0 && (
-                    <div className="flex justify-between text-emerald-700 font-mono font-bold">
-                      <span>
-                        {discountPercent > 0
-                          ? `Clinical Pack Discount (${discountPercent}%):`
-                          : 'Pre-Approved Medicine Discount:'}
-                      </span>
-                      <span>-₹{cartDiscountAmount.toFixed(2)}</span>
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-emerald-700 font-mono font-bold">
+                        <span>
+                          {isOverallDiscountActive
+                            ? `Overall Bill Discount (${discountPercent}%):`
+                            : 'Individual Medicine Discounts:'}
+                        </span>
+                        <span>-₹{cartDiscountAmount.toFixed(2)}</span>
+                      </div>
+                      {isOverallDiscountActive && cartItemDiscountTotal > 0 && (
+                        <div className="text-[10px] text-amber-800 bg-amber-50 px-2 py-1 rounded-lg border border-amber-200">
+                          ⏸️ Overall {discountPercent}% bill discount active. Individual medicine discounts paused.
+                        </div>
+                      )}
                     </div>
                   )}
 

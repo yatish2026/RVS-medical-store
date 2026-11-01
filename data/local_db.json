@@ -17,6 +17,15 @@
       "role": "pharmacist",
       "designation": "Dispensary Pharmacist",
       "phone": "+91 98765 00000"
+    },
+    {
+      "id": "user-1793515420890",
+      "username": "dinesh",
+      "password": "dinesh",
+      "name": "diensh",
+      "role": "doctor_mo",
+      "designation": "grt",
+      "phone": "8794178989"
     }
   ],
   "medicines": [
@@ -32,7 +41,8 @@
       "min_stock_alert": 20,
       "prescription_required": true,
       "hsn_code": "30049069",
-      "gst_rate": 5
+      "gst_rate": 5,
+      "default_discount_percent": 5
     },
     {
       "id": "6c7d745e-5def-49c5-bb3e-404f5c8be3ab",
@@ -873,10 +883,75 @@
       "supplier_name": "Apollo Pharma Distributors"
     }
   ],
-  "patients": [],
+  "patients": [
+    {
+      "id": "bd384201-0956-4fcd-be2d-c22790578e8f",
+      "uhid": "UHID-2026-6866",
+      "name": "Walk-in Patient",
+      "phone": "",
+      "gender": "General",
+      "age": "N/A",
+      "doctor_name": "Dr. On-Duty Medical Officer",
+      "total_spent": 23.65,
+      "visit_count": 1,
+      "last_visit": "2026-11-01T06:48:50.438Z",
+      "created_at": "2026-11-01T06:48:50.438Z",
+      "last_invoice": "RVS-INV-2026-8697",
+      "recent_medicines": "DICLO PLUS TAB (1)",
+      "allergies": "None",
+      "diagnosis": "Hospital Pharmacy Prescription"
+    },
+    {
+      "id": "4ae411dd-a211-4a55-8b63-d386a2b65972",
+      "uhid": "UHID-2026-3399",
+      "name": "Walk-in Patient",
+      "phone": "",
+      "gender": "General",
+      "age": "N/A",
+      "doctor_name": "Dr. On-Duty Medical Officer",
+      "total_spent": 23.65,
+      "visit_count": 1,
+      "last_visit": "2026-11-01T06:48:50.437Z",
+      "created_at": "2026-11-01T06:48:50.437Z",
+      "last_invoice": "RVS-INV-2026-8697",
+      "recent_medicines": "DICLO PLUS TAB (1)",
+      "allergies": "None",
+      "diagnosis": "Hospital Pharmacy Prescription"
+    }
+  ],
   "suppliers": [],
   "requisitions": [],
   "sales": [
+    {
+      "id": "23aa0452-d6c2-45be-8a26-5c4dfd844dd4",
+      "invoice_number": "RVS-INV-2026-8697",
+      "customer_name": "Walk-in Patient",
+      "customer_phone": "N/A",
+      "doctor_name": "Dr. On-Duty Medical Officer",
+      "subtotal": 24.9,
+      "discount_amount": 1.25,
+      "tax_amount": 0,
+      "grand_total": 23.65,
+      "is_gst_active": false,
+      "payment_mode": "UPI",
+      "payment_status": "Completed",
+      "notes": "",
+      "created_at": "2026-11-01T06:48:50.434Z",
+      "items": [
+        {
+          "id": "36471c56-8823-48ec-82ea-4717c8a11d88",
+          "sale_id": "23aa0452-d6c2-45be-8a26-5c4dfd844dd4",
+          "batch_id": "926a069a-5584-407d-8923-05803edd5615",
+          "medicine_name": "DICLO PLUS TAB",
+          "batch_number": "TPP261167",
+          "expiry_date": "2029-04-30",
+          "quantity": 1,
+          "unit_price": 24.9,
+          "discount_percent": 5,
+          "total_price": 24.9
+        }
+      ]
+    },
     {
       "id": "465c96dc-2197-40e7-b170-8816f6a34cbb",
       "invoice_number": "RVS-INV-2026-8954",
@@ -911,6 +986,7 @@
   "discountPolicy": {
     "discount_percent": 0,
     "authorized_by": "None",
-    "reason": "Standard Bill Rate (No Discount Set)"
+    "reason": "Standard Bill Rate (No Discount Set)",
+    "updated_at": "2026-11-01T07:31:12.450Z"
   }
 }

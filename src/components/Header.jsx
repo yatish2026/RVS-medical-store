@@ -9,7 +9,6 @@ import {
   AlertTriangle,
   Clock,
   ShieldCheck,
-  Database,
   LogOut,
   FileUp
 } from 'lucide-react'
@@ -26,7 +25,6 @@ export const Header = ({ onOpenMedicineModal, onOpenPatientModal, onOpenPdfModal
     canManageUsers,
     setIsAuthModalOpen,
     setIsUserManagementModalOpen,
-    setIsDbExplorerOpen,
     logout
   } = useApp()
 
@@ -174,17 +172,6 @@ export const Header = ({ onOpenMedicineModal, onOpenPatientModal, onOpenPdfModal
                   </span>
                 </div>
               </div>
-            </button>
-
-            {/* Database Explorer Button */}
-            <button
-              id="database-explorer-btn"
-              onClick={() => setIsDbExplorerOpen(true)}
-              title="Inspect Live SQLite Database (hospital.db)"
-              className="flex items-center gap-1.5 bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200/80 px-2.5 sm:px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer"
-            >
-              <Database className="w-3.5 h-3.5 text-teal-600" />
-              <span className="hidden md:inline">Database</span>
             </button>
 
             {/* Logout Button */}

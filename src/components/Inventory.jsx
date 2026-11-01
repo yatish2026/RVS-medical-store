@@ -21,7 +21,8 @@ import {
   Info,
   FileUp,
   Sparkles,
-  Lock
+  Lock,
+  RotateCcw
 } from 'lucide-react'
 
 export const Inventory = ({ onOpenMedicineModal, onOpenBatchModal, onEditMedicine, onOpenPdfModal }) => {
@@ -40,6 +41,7 @@ export const Inventory = ({ onOpenMedicineModal, onOpenBatchModal, onEditMedicin
 
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('ALL')
+  const [showDiscountedOnly, setShowDiscountedOnly] = useState(false)
   const [expandedMedId, setExpandedMedId] = useState(null)
 
   // Categories list
@@ -54,9 +56,12 @@ export const Inventory = ({ onOpenMedicineModal, onOpenBatchModal, onEditMedicin
       (med.manufacturer && med.manufacturer.toLowerCase().includes(searchQuery.toLowerCase()))
 
     const matchesCategory = selectedCategory === 'ALL' || med.category === selectedCategory
+    const matchesDiscount = !showDiscountedOnly || (parseFloat(med.default_discount_percent) || 0) > 0
 
-    return matchesSearch && matchesCategory
+    return matchesSearch && matchesCategory && matchesDiscount
   })
+
+  const discountedCount = medicines.filter(m => (parseFloat(m.default_discount_percent) || 0) > 0).length
 
   const toggleExpand = (id) => {
     setExpandedMedId(expandedMedId === id ? null : id)
@@ -128,21 +133,42 @@ export const Inventory = ({ onOpenMedicineModal, onOpenBatchModal, onEditMedicin
           )}
         </div>
 
-        {/* Category Selector */}
-        <div className="relative">
-          <Filter className="w-4 h-4 text-teal-600 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="w-full bg-white border border-slate-300 focus:border-teal-600 focus:ring-1 focus:ring-teal-600 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-900 transition-all outline-none cursor-pointer appearance-none shadow-xs font-medium"
+        {/* Category Selector & Discount Toggle */}
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Filter className="w-4 h-4 text-teal-600 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="w-full bg-white border border-slate-300 focus:border-teal-600 focus:ring-1 focus:ring-teal-600 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-900 transition-all outline-none cursor-pointer appearance-none shadow-xs font-medium"
+            >
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat === 'ALL' ? 'All Formulary Categories' : cat}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowDiscountedOnly(!showDiscountedOnly)}
+            className={`px-3 py-2.5 rounded-xl text-xs font-bold transition-all border shrink-0 flex items-center gap-1.5 cursor-pointer shadow-xs ${
+              showDiscountedOnly
+                ? 'bg-emerald-600 text-white border-emerald-700'
+                : 'bg-white text-slate-700 hover:bg-slate-50 border-slate-300'
+            }`}
+            title="Filter to show only medicines with pre-approved discounts"
           >
-            {categories.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat === 'ALL' ? 'All Formulary Categories' : cat}
-              </option>
-            ))}
-          </select>
-          <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Tag className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Discounted</span>
+            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-black ${
+              showDiscountedOnly ? 'bg-white text-emerald-800' : 'bg-slate-100 text-slate-700'
+            }`}>
+              {discountedCount}
+            </span>
+          </button>
         </div>
 
       </div>
@@ -200,9 +226,50 @@ export const Inventory = ({ onOpenMedicineModal, onOpenBatchModal, onEditMedicin
                 </tr>
               ) : filteredMedicines.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="py-12 text-center text-slate-400 text-sm">
-                    <Pill className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                    No medicines match your search "{searchQuery}".
+                  <td colSpan="6" className="py-12 text-center">
+                    <div className="max-w-md mx-auto space-y-3">
+                      <div className="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center mx-auto shadow-2xs">
+                        <Pill className="w-7 h-7" />
+                      </div>
+                      <h4 className="font-bold text-slate-800 text-sm">
+                        {searchQuery
+                          ? `No medicines match "${searchQuery}"`
+                          : showDiscountedOnly
+                          ? 'No discounted medicines found'
+                          : `No medicines found in ${selectedCategory}`}
+                      </h4>
+                      <p className="text-xs text-slate-500">
+                        {selectedCategory !== 'ALL'
+                          ? `No ${selectedCategory} medicines have been added to dispensary stock yet.`
+                          : 'Try modifying your search or add a new medicine formulation to stock.'}
+                      </p>
+                      <div className="flex items-center justify-center gap-2 pt-1">
+                        {canAddMedicine && (
+                          <button
+                            type="button"
+                            onClick={() => onOpenMedicineModal(selectedCategory !== 'ALL' ? selectedCategory : undefined)}
+                            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs shadow-xs cursor-pointer"
+                          >
+                            <Plus className="w-4 h-4" />
+                            <span>+ Add {selectedCategory !== 'ALL' ? selectedCategory : ''} Medicine</span>
+                          </button>
+                        )}
+                        {(selectedCategory !== 'ALL' || searchQuery || showDiscountedOnly) && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedCategory('ALL')
+                              setSearchQuery('')
+                              setShowDiscountedOnly(false)
+                            }}
+                            className="flex items-center gap-1 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
+                            <span>Clear Filters</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </td>
                 </tr>
               ) : (

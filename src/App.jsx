@@ -18,6 +18,7 @@ import { UserManagementModal } from './components/UserManagementModal'
 import { LoginPage } from './components/LoginPage'
 import { DatabaseExplorerModal } from './components/DatabaseExplorerModal'
 import { PdfImportModal } from './components/PdfImportModal'
+import { DiscountControl } from './components/DiscountControl'
 
 export function App() {
   const {
@@ -42,8 +43,12 @@ export function App() {
   const [isRevenueModalOpen, setIsRevenueModalOpen] = useState(false)
 
   // Handlers for Medicine & Batch modals
-  const handleOpenNewMedicine = () => {
-    setEditingMedicine(null)
+  const handleOpenNewMedicine = (defaultCat) => {
+    if (defaultCat && typeof defaultCat === 'string' && defaultCat !== 'ALL') {
+      setEditingMedicine({ category: defaultCat, name: '', generic_name: '' })
+    } else {
+      setEditingMedicine(null)
+    }
     setTargetMedForBatch(null)
     setIsMedicineModalOpen(true)
   }
@@ -118,12 +123,21 @@ export function App() {
             />
           )}
 
-          {activeTab === 'pos' && <POSBilling />}
+          {activeTab === 'pos' && (
+            <POSBilling
+              onOpenMedicineModal={handleOpenNewMedicine}
+              onOpenPdfModal={() => setIsPdfModalOpen(true)}
+            />
+          )}
 
           {activeTab === 'expiry' && <ExpiryTracker />}
 
           {activeTab === 'patients' && (
             <Patients onOpenPatientModal={() => setIsPatientModalOpen(true)} />
+          )}
+
+          {activeTab === 'discounts' && (
+            <DiscountControl onOpenMedicineModal={handleOpenNewMedicine} />
           )}
         </main>
       </div>

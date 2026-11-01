@@ -32,7 +32,7 @@ export const MedicineModal = ({ isOpen, onClose, initialData = null, targetMedic
 
   // Mode: 'BATCH_ONLY' (inwarding new batch), 'EDIT_MEDICINE', or 'NEW_MEDICINE_WITH_BATCH'
   const isBatchOnly = Boolean(targetMedicineForBatch)
-  const isEditMedicine = Boolean(initialData && !targetMedicineForBatch)
+  const isEditMedicine = Boolean(initialData && initialData.id && !targetMedicineForBatch)
 
   // Only MO (Medical Officer) and Super Admin have authority to modify medicine prices and discounts
   const isMoOrAdmin =
@@ -75,6 +75,17 @@ export const MedicineModal = ({ isOpen, onClose, initialData = null, targetMedic
     setBatchForm(prev => ({ ...prev, expiry_date: `${yyyy}-${mm}-${dd}` }))
   }
 
+  const resolveCategory = (cat) => {
+    if (!cat) return 'Antibiotics'
+    const c = cat.toLowerCase()
+    if (c.includes('cardiac') || c.includes('cardio')) return 'Cardiac & Cardiovascular'
+    if (c.includes('diabet') || c.includes('insulin')) return 'Diabetics & Antidiabetic'
+    if (c.includes('analgesic') || c.includes('pain') || c.includes('antipyretic')) return 'Analgesics & Antipyretics'
+    if (c.includes('fluid') || c.includes('infusion') || c.includes('iv')) return 'IV Fluids & Infusions'
+    if (c.includes('antibiotic')) return 'Antibiotics'
+    return cat
+  }
+
   useEffect(() => {
     const defaultSupplier = suppliers?.[0]?.company_name || 'Apollo Pharma Distributors'
 
@@ -87,7 +98,7 @@ export const MedicineModal = ({ isOpen, onClose, initialData = null, targetMedic
       setMedForm({
         name: initialData.name || '',
         generic_name: initialData.generic_name || '',
-        category: initialData.category || 'Antibiotics',
+        category: resolveCategory(initialData.category),
         dosage_form: initialData.dosage_form || 'Tablet',
         strength: initialData.strength || '',
         manufacturer: initialData.manufacturer || '',
@@ -309,9 +320,9 @@ export const MedicineModal = ({ isOpen, onClose, initialData = null, targetMedic
                   >
                     <option value="Antibiotics">Antibiotics</option>
                     <option value="Analgesics & Antipyretics">Analgesics & Antipyretics</option>
+                    <option value="Cardiac & Cardiovascular">Cardiac & Cardiovascular</option>
+                    <option value="Diabetics & Antidiabetic">Diabetics & Antidiabetic</option>
                     <option value="Gastrointestinal & Antacids">Gastrointestinal & Antacids</option>
-                    <option value="Cardiovascular">Cardiovascular</option>
-                    <option value="Antidiabetic">Antidiabetic</option>
                     <option value="Respiratory & Antiallergic">Respiratory & Antiallergic</option>
                     <option value="IV Fluids & Infusions">IV Fluids & Infusions</option>
                     <option value="Critical Care & Injections">Critical Care & Injections</option>

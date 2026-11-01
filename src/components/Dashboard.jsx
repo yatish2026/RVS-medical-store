@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useApp } from '../context/AppContext'
 import {
   TrendingUp,
@@ -16,7 +16,13 @@ import {
   ChevronRight,
   DollarSign,
   ShieldAlert,
-  Sparkles
+  Sparkles,
+  Percent,
+  Tag,
+  Check,
+  Trash2,
+  ShieldCheck,
+  Lock
 } from 'lucide-react'
 
 export const Dashboard = ({ onOpenMedicineModal, onOpenPatientModal, onOpenBatchModal, onOpenRevenueAnalytics }) => {
@@ -34,8 +40,13 @@ export const Dashboard = ({ onOpenMedicineModal, onOpenPatientModal, onOpenBatch
     setActiveTab,
     setActiveInvoice,
     canAddMedicine,
-    isReadOnly
+    isReadOnly,
+    currentUser,
+    currentRole,
+    preApprovedDiscount
   } = useApp()
+
+  const isMoOrAdmin = currentUser?.role === 'admin_supervisor' || currentUser?.role === 'doctor_mo'
 
   // Today's sales
   const todayStr = new Date().toISOString().split('T')[0]

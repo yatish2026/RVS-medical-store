@@ -6,6 +6,7 @@ import {
   ShoppingCart,
   Hourglass,
   Users,
+  Percent,
   X,
   PhoneCall,
   ShieldCheck
@@ -15,6 +16,8 @@ export const Sidebar = ({ isOpen, onClose }) => {
   const {
     activeTab,
     setActiveTab,
+    medicines,
+    preApprovedDiscount,
     lowStockItems,
     expiredCount,
     criticalExpiryCount,
@@ -30,6 +33,9 @@ export const Sidebar = ({ isOpen, onClose }) => {
   } = useApp()
 
   const totalExpiryAlerts = expiredCount + criticalExpiryCount
+  const discountedMedicinesCount = medicines.filter(
+    (m) => (parseFloat(m.default_discount_percent) || 0) > 0
+  ).length
 
   // Navigation Items with Role-Based Access Controls
   const navItems = [
@@ -71,6 +77,18 @@ export const Sidebar = ({ isOpen, onClose }) => {
       badge: sales.length > 0 ? `${sales.length} Bills` : (patients.length > 0 ? `${patients.length}` : null),
       badgeColor: 'bg-sky-50 text-sky-800 border-sky-200 font-bold',
       color: 'text-sky-600'
+    },
+    {
+      id: 'discounts',
+      label: 'Discount Control',
+      icon: Percent,
+      badge: (preApprovedDiscount?.percent > 0)
+        ? `${preApprovedDiscount.percent}% All`
+        : (discountedMedicinesCount > 0 ? `${discountedMedicinesCount} Items` : null),
+      badgeColor: (preApprovedDiscount?.percent > 0)
+        ? 'bg-purple-100 text-purple-900 border-purple-300 font-bold'
+        : 'bg-indigo-50 text-indigo-700 border-indigo-200 font-bold',
+      color: 'text-purple-600'
     }
   ]
 

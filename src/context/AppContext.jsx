@@ -584,6 +584,32 @@ export const AppProvider = ({ children }) => {
     notify('Formulary & Pricing Saved', `${medData.name || 'Medicine'} details, pricing & MO discount updated successfully.`, 'success')
   }
 
+  // Set or Remove Individual Medicine Pre-Approved Discount (MO & Super Admin Authority)
+  const setMedicineDiscount = async (medicineId, discountPct) => {
+    if (currentUser?.role !== 'admin_supervisor' && currentUser?.role !== 'doctor_mo') {
+      notify('Permission Restricted', 'Only Medical Officer (MO) or Super Admin can modify medicine discounts.', 'error')
+      return false
+    }
+    const num = Math.max(0, Math.min(100, parseFloat(discountPct) || 0))
+    const target = medicines.find(m => m.id === medicineId)
+    if (!target) return false
+
+    setMedicines(prev => prev.map(m => m.id === medicineId ? { ...m, default_discount_percent: num } : m))
+
+    if (backendConnected) {
+      try {
+        await apiUpdateMedicine(medicineId, { default_discount_percent: num })
+      } catch (e) {}
+    }
+
+    if (num > 0) {
+      notify('Individual Discount Set', `${num}% discount applied to ${target.name}. Active on billing when overall discount is 0%.`, 'success')
+    } else {
+      notify('Discount Removed', `Discount removed for ${target.name} (0%). Standard rate applies.`, 'info')
+    }
+    return true
+  }
+
   // Delete Medicine
   const deleteMedicine = async (id) => {
     setMedicines(prev => prev.filter(m => m.id !== id))
@@ -795,14 +821,17 @@ export const AppProvider = ({ children }) => {
     return acc + ((item.total_price * dPercent) / 100)
   }, 0)
 
-  // Overall bill discount (either the doctor's manual global pack discount % or item pre-approved discounts, whichever is higher)
+  // Overall bill discount (pushed from Admin / MO page)
+  // RULE: When an Overall Bill Discount is applied (> 0%), individual medicine discounts are PAUSED / STOPPED.
+  // When Overall Bill Discount is 0 (inactive), individual medicine discounts are ACTIVE.
+  const isOverallDiscountActive = discountPercent > 0
   const cartGlobalDiscountAmount = (cartSubtotal * discountPercent) / 100
-  const cartDiscountAmount = Math.max(cartItemDiscountTotal, cartGlobalDiscountAmount)
+  const cartDiscountAmount = isOverallDiscountActive ? cartGlobalDiscountAmount : cartItemDiscountTotal
 
   // Calculate GST: if isGstActive is true, compute tax; if false, 0
   const cartTaxAmount = isGstActive
     ? cart.reduce((acc, item) => {
-        const effectiveItemDisc = Math.max(item.discount_percent || 0, discountPercent)
+        const effectiveItemDisc = isOverallDiscountActive ? discountPercent : (item.discount_percent || 0)
         const itemTaxable = item.total_price * (1 - effectiveItemDisc / 100)
         return acc + (itemTaxable * ((item.gst_rate !== undefined ? item.gst_rate : 5) / 100))
       }, 0)
@@ -830,7 +859,8 @@ export const AppProvider = ({ children }) => {
       expiry_date: item.expiry_date || null,
       quantity: item.quantity,
       unit_price: item.unit_price,
-      discount_percent: item.discount_percent || 0,
+      discount_percent: isOverallDiscountActive ? 0 : (item.discount_percent || 0),
+      individual_discount_paused: isOverallDiscountActive && (item.discount_percent > 0),
       total_price: item.total_price
     }))
 
@@ -842,6 +872,14 @@ export const AppProvider = ({ children }) => {
       doctor_name: cartCustomer.doctor || 'Dr. On-Duty Officer',
       subtotal: parseFloat(cartSubtotal.toFixed(2)),
       discount_amount: parseFloat(cartDiscountAmount.toFixed(2)),
+      discount_percent: discountPercent,
+      is_overall_discount_active: isOverallDiscountActive,
+      discount_type: isOverallDiscountActive
+        ? 'OVERALL_BILL_DISCOUNT'
+        : (cartItemDiscountTotal > 0 ? 'ITEM_LEVEL_DISCOUNT' : 'NONE'),
+      discount_note: isOverallDiscountActive
+        ? `Overall Bill Discount (${discountPercent}%) active. Individual medicine discounts paused.`
+        : (cartItemDiscountTotal > 0 ? `Individual medicine formulary discounts applied.` : 'Standard pricing (No discount)'),
       tax_amount: parseFloat(cartTaxAmount.toFixed(2)),
       grand_total: parseFloat(cartGrandTotal.toFixed(2)),
       is_gst_active: isGstActive,
@@ -1030,6 +1068,7 @@ export const AppProvider = ({ children }) => {
         pushAllLocalDataToSupabase: pushAllLocalDataToBackend,
         addMedicineWithBatch,
         updateMedicine,
+        setMedicineDiscount,
         deleteMedicine,
         addBatch,
         updateBatch,
@@ -1044,6 +1083,9 @@ export const AppProvider = ({ children }) => {
         clearCart,
         cartSubtotal,
         cartDiscountAmount,
+        cartItemDiscountTotal,
+        cartGlobalDiscountAmount,
+        isOverallDiscountActive,
         cartTaxAmount,
         cartGrandTotal,
         isGstActive,
