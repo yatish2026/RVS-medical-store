@@ -60,9 +60,10 @@ export const AppProvider = ({ children }) => {
   // Theme State
   const [darkMode, setDarkMode] = useState(false)
 
-  // User Authentication & Roles State - Always preserves INITIAL_USERS (admin & dr-yatish)
+  // User Authentication & Roles State - Super Admin only by default
   const [users, setUsers] = useState(() => {
     const saved = localStorage.getItem('rvs_users')
+    const purgedUsernames = new Set(['dr-yatish', 'doctor_mo', 'supervisor', 'pharmacist', 'dinesh'])
     const userMap = new Map()
     INITIAL_USERS.forEach(u => userMap.set(u.username.toLowerCase(), u))
     if (saved) {
@@ -70,24 +71,31 @@ export const AppProvider = ({ children }) => {
         const parsed = JSON.parse(saved)
         if (Array.isArray(parsed)) {
           parsed.forEach(u => {
-            if (u && u.username) userMap.set(u.username.toLowerCase(), u)
+            if (u && u.username && !purgedUsernames.has(u.username.toLowerCase())) {
+              userMap.set(u.username.toLowerCase(), u)
+            }
           })
         }
       } catch (e) {}
     }
-    return Array.from(userMap.values())
+    const cleanList = Array.from(userMap.values())
+    localStorage.setItem('rvs_users', JSON.stringify(cleanList))
+    return cleanList
   })
 
   const [currentUser, setCurrentUser] = useState(() => {
     const saved = localStorage.getItem('rvs_current_user')
     if (saved) {
       try {
-        return JSON.parse(saved)
+        const parsed = JSON.parse(saved)
+        if (parsed && (parsed.username === 'admin' || parsed.role === 'admin_supervisor')) {
+          return parsed
+        }
       } catch (e) {
         // fallback
       }
     }
-    return null // Default to null so user sees clean LoginPage first
+    return null // Default to null so user sees clean Super Admin LoginPage first
   })
 
   // Pre-approved Clinical Pack Discount (Default: 0% / None - only set when explicitly authorized by MO/Admin)
@@ -415,10 +423,13 @@ export const AppProvider = ({ children }) => {
         setDiscountPercent(disc)
       }
       if (cloudUsers.status === 'fulfilled' && Array.isArray(cloudUsers.value) && cloudUsers.value.length > 0) {
+        const purgedUsernames = new Set(['dr-yatish', 'doctor_mo', 'supervisor', 'pharmacist', 'dinesh'])
         const userMap = new Map()
         INITIAL_USERS.forEach(u => userMap.set(u.username.toLowerCase(), u))
         cloudUsers.value.forEach(u => {
-          if (u && u.username) userMap.set(u.username.toLowerCase(), u)
+          if (u && u.username && !purgedUsernames.has(u.username.toLowerCase())) {
+            userMap.set(u.username.toLowerCase(), u)
+          }
         })
         setUsers(Array.from(userMap.values()))
       }

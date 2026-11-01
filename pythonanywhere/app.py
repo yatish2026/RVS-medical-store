@@ -147,16 +147,14 @@ def init_db():
         );
     """)
 
-    # Seed default initial staff accounts if not present
-    cursor.execute("SELECT COUNT(*) as count FROM users")
+    # Ensure only Super Admin exists by default (purge any old demo staff accounts)
+    cursor.execute("DELETE FROM users WHERE username IN ('dr-yatish', 'doctor_mo', 'supervisor', 'pharmacist', 'dinesh')")
+    cursor.execute("SELECT COUNT(*) as count FROM users WHERE username='admin'")
     if cursor.fetchone()["count"] == 0:
-        cursor.executemany("""
+        cursor.execute("""
             INSERT INTO users (id, username, password_hash, name, role, designation, phone)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, [
-            ("user-admin", "admin", "admin123", "Dr. Yatish", "admin_supervisor", "Medical Director & Super Admin", "+91 98765 43210"),
-            ("user-dr-yatish", "dr-yatish", "Yatish", "yatish", "pharmacist", "Dispensary Pharmacist", "+91 98765 00000")
-        ])
+        """, ("user-admin", "admin", "admin123", "Dr. Yatish", "admin_supervisor", "Chief Medical Administrator & Super Admin", "+91 98765 43210"))
 
     # Seed initial discount policy if not present (0% default)
     cursor.execute("SELECT COUNT(*) as count FROM clinical_discount_policy")
@@ -247,12 +245,9 @@ def auth_login():
     username = data.get("username", "").strip().lower()
     password = data.get("password", "")
 
-    # Quick preset fallback
+    # Quick preset fallback (Super Admin only)
     preset = {
-        "admin": {"name": "Dr. Yatish", "role": "admin_supervisor", "pass": "admin123"},
-        "doctor_mo": {"name": "Dr. A. Sharma (MD)", "role": "doctor_mo", "pass": "doc123"},
-        "supervisor": {"name": "R. Verma", "role": "supervisor_viewer", "pass": "viewer123"},
-        "pharmacist": {"name": "S. Kumar", "role": "pharmacist", "pass": "pharma123"}
+        "admin": {"name": "Dr. Yatish", "role": "admin_supervisor", "pass": "admin123"}
     }
 
     if username in preset and preset[username]["pass"] == password:

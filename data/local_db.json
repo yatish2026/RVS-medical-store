@@ -8,24 +8,6 @@
       "role": "admin_supervisor",
       "designation": "Chief Medical Administrator & Super Admin",
       "phone": "+91 98765 43210"
-    },
-    {
-      "id": "user-dr-yatish",
-      "username": "dr-yatish",
-      "password": "Yatish",
-      "name": "yatish",
-      "role": "pharmacist",
-      "designation": "Dispensary Pharmacist",
-      "phone": "+91 98765 00000"
-    },
-    {
-      "id": "user-1793515420890",
-      "username": "dinesh",
-      "password": "dinesh",
-      "name": "diensh",
-      "role": "doctor_mo",
-      "designation": "grt",
-      "phone": "8794178989"
     }
   ],
   "medicines": [

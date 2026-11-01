@@ -80,14 +80,5 @@ export const INITIAL_USERS = [
     role: 'admin_supervisor',
     designation: 'Chief Medical Administrator & Super Admin',
     phone: '+91 98765 43210'
-  },
-  {
-    id: 'user-dr-yatish',
-    username: 'dr-yatish',
-    password: 'Yatish',
-    name: 'yatish',
-    role: 'pharmacist',
-    designation: 'Dispensary Pharmacist',
-    phone: '+91 98765 00000'
   }
 ]

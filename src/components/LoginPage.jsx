@@ -90,12 +90,6 @@ export const LoginPage = ({ onLoginSuccess, backendConnected }) => {
     setErrorMsg('')
   }
 
-  const fillPharmacistCredentials = () => {
-    setUsername('dr-yatish')
-    setPassword('Yatish')
-    setErrorMsg('')
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-teal-950 flex flex-col justify-center items-center p-4 sm:p-6 antialiased selection:bg-teal-500 selection:text-white">
       
@@ -121,7 +115,7 @@ export const LoginPage = ({ onLoginSuccess, backendConnected }) => {
           <div className="flex items-center justify-center gap-2 mt-2.5">
             <span className="text-[11px] font-mono font-bold px-3 py-1 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/30 flex items-center gap-1.5 shadow-xs">
               <ShieldCheck className="w-3.5 h-3.5 text-teal-400" />
-              Admin-Controlled Access Portal
+              Super Admin Gateway
             </span>
           </div>
         </div>
@@ -134,26 +128,15 @@ export const LoginPage = ({ onLoginSuccess, backendConnected }) => {
             <div>
               <h2 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
                 <Lock className="w-4 h-4 text-teal-600" />
-                Staff Sign In
+                Super Administrator Sign In
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
-                Enter your authorized hospital staff credentials
+                Enter your Super Admin credentials to access Central Dispensary management.
               </p>
             </div>
-            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200">
-              Zero Public Reg
+            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200">
+              Super Admin
             </span>
-          </div>
-
-          {/* Security Notice: Admin-Controlled User Creation */}
-          <div className="mb-5 p-3 rounded-xl bg-amber-50/80 border border-amber-200/90 text-amber-900 text-xs flex items-start gap-2.5">
-            <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-            <div className="leading-relaxed">
-              <strong className="block font-bold text-amber-950">
-                Authorized Personnel Only
-              </strong>
-              Public registration is disabled. Staff accounts (Doctor, Pharmacist, Supervisor) are provisioned exclusively by the <strong>Super Administrator</strong>.
-            </div>
           </div>
 
           {/* Feedback Alerts */}
@@ -168,7 +151,7 @@ export const LoginPage = ({ onLoginSuccess, backendConnected }) => {
           <form onSubmit={handleLoginSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider font-mono">
-                Username
+                Admin Username
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -188,7 +171,7 @@ export const LoginPage = ({ onLoginSuccess, backendConnected }) => {
 
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider font-mono">
-                Password
+                Admin Password
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -218,24 +201,18 @@ export const LoginPage = ({ onLoginSuccess, backendConnected }) => {
               disabled={loading}
               className="w-full mt-2 py-3 px-4 rounded-xl bg-gradient-to-r from-teal-600 via-teal-700 to-cyan-700 hover:from-teal-500 hover:to-cyan-600 text-white font-extrabold text-sm shadow-lg shadow-teal-700/20 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
             >
-              <span>{loading ? 'Authenticating...' : 'Sign In to Dispensary'}</span>
+              <span>{loading ? 'Authenticating...' : 'Sign In as Super Administrator'}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
 
-          {/* Initial Staff Credentials Box */}
-          <div className="mt-6 pt-5 border-t border-slate-100 space-y-2.5">
-            <span className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider font-mono flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-teal-600" />
-              Pre-Configured Staff Accounts
-            </span>
-
-            {/* Super Admin */}
-            <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          {/* Super Admin Credentials Helper */}
+          <div className="mt-6 pt-5 border-t border-slate-100">
+            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
               <div>
                 <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-purple-500"></span>
-                  Super Admin (Dr. Yatish)
+                  Super Admin Credentials
                 </span>
                 <p className="text-[11px] text-slate-500 font-mono mt-0.5">
                   User: <strong className="text-slate-800">admin</strong> • Pass: <strong className="text-slate-800">admin123</strong>
@@ -245,30 +222,9 @@ export const LoginPage = ({ onLoginSuccess, backendConnected }) => {
               <button
                 type="button"
                 onClick={fillAdminCredentials}
-                className="px-3 py-1 rounded-xl bg-white hover:bg-purple-50 text-purple-800 border border-purple-200 text-xs font-bold transition-all cursor-pointer shadow-2xs shrink-0 self-start sm:self-auto"
+                className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-all cursor-pointer shadow-xs shrink-0 self-start sm:self-auto"
               >
-                Autofill Admin
-              </button>
-            </div>
-
-            {/* Dispensary Pharmacist */}
-            <div className="p-3 rounded-2xl bg-teal-50/50 border border-teal-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-              <div>
-                <span className="text-xs font-bold text-teal-950 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-teal-500"></span>
-                  Pharmacist (yatish)
-                </span>
-                <p className="text-[11px] text-teal-700 font-mono mt-0.5">
-                  User: <strong className="text-teal-900">dr-yatish</strong> • Pass: <strong className="text-teal-900">Yatish</strong>
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={fillPharmacistCredentials}
-                className="px-3 py-1 rounded-xl bg-white hover:bg-teal-100 text-teal-800 border border-teal-300 text-xs font-bold transition-all cursor-pointer shadow-2xs shrink-0 self-start sm:self-auto"
-              >
-                Autofill Pharmacist
+                Autofill Credentials
               </button>
             </div>
           </div>

@@ -99,11 +99,10 @@ If you have already configured the app once and want to fetch the latest updates
 
 ---
 
-## 🔑 Default Staff Credentials for Testing Roles
+## 🔑 Authorized Super Administrator Account
 
-| Role | Username | Password | Privileges & Discount Rules |
+| Role | Username | Password | Privileges & Authority |
 |---|---|---|---|
-| **Super Admin** | `admin` | `admin123` | **Full Authority**: Can set **Overall Bill Package Discount** AND **Individual Medicine Discounts** + User/Staff Role Admin |
-| **Medical Officer (Doctor / MO)** | `doctor_mo` | `doc123` | **Individual Medicine Discount Authority ONLY**: Can set custom % discounts per individual medicine formulary. (Overall bill package discount is strictly locked to Super Admin) |
-| **Supervisor (Read-Only / Auditor)** | `supervisor` | `viewer123` | **Audit mode only**: Read-only formulary and billing logs; all editing, discounting, and checkout buttons are locked |
-| **Pharmacist (Dispensary)** | `pharmacist` | `pharma123` | Inward stock, add medicines, POS billing; **discount alteration locked** (Terminal automatically calculates discounts approved by Doctor / Super Admin) |
+| **Super Admin** | `admin` | `admin123` | **Full Authority**: Overall Bill Package Discounts, Individual Medicine Formulary Discounts, Inward/Edit Stock, Billing, and User/Staff Account Provisioning |
+
+> **Security Note:** Public registration and pre-configured test logins have been removed. Any additional staff accounts (Doctors, Pharmacists, Supervisors) must be provisioned directly by the Super Admin inside the **Users & Roles** portal.

@@ -1,64 +1,36 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { useApp } from '../context/AppContext'
 import {
-  Shield,
-  User,
-  KeyRound,
-  CheckCircle2,
-  Lock,
-  ArrowRight,
-  Stethoscope,
-  Eye,
-  Pill,
-  Sparkles,
-  X,
   ShieldCheck,
-  Building,
+  User,
+  Lock,
   LogOut,
-  ShieldAlert
+  X,
+  CheckCircle2,
+  Users,
+  Settings,
+  Pill,
+  ShoppingCart,
+  Percent
 } from 'lucide-react'
 
 export const AuthModal = () => {
   const {
     isAuthModalOpen,
     setIsAuthModalOpen,
-    users,
     currentUser,
-    login,
-    quickSwitchUser,
-    ROLES,
-    logout
+    logout,
+    setIsUserManagementModalOpen
   } = useApp()
-
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
-  const [isManualLogin, setIsManualLogin] = useState(false)
-  const [loginError, setLoginError] = useState('')
 
   if (!isAuthModalOpen) return null
 
-  const handleManualSubmit = (e) => {
-    e.preventDefault()
-    setLoginError('')
-    const ok = login(username, password)
-    if (!ok) {
-      setLoginError('Invalid username or password. Check dummy accounts below.')
-    }
-  }
-
-  const roleIcons = {
-    admin_supervisor: ShieldCheck,
-    doctor_mo: Stethoscope,
-    supervisor_viewer: Eye,
-    pharmacist: Pill
-  }
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full border border-slate-200 overflow-hidden flex flex-col max-h-[92vh]">
+      <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full border border-slate-200 overflow-hidden flex flex-col max-h-[92vh]">
         
         {/* Header */}
-        <div className="p-5 sm:p-6 bg-gradient-to-r from-teal-800 via-cyan-800 to-teal-900 text-white relative">
+        <div className="p-5 sm:p-6 bg-gradient-to-r from-purple-800 via-indigo-900 to-slate-900 text-white relative">
           <button
             onClick={() => setIsAuthModalOpen(false)}
             className="absolute top-4 right-4 p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
@@ -69,253 +41,118 @@ export const AuthModal = () => {
 
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/25 flex items-center justify-center backdrop-blur-md shadow-inner">
-              <Shield className="w-6 h-6 text-teal-200" />
+              <ShieldCheck className="w-7 h-7 text-purple-200" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-lg sm:text-xl font-black tracking-tight text-white">
-                  RVS Medical Security & Role Access
+                  Super Administrator Profile
                 </h3>
-                <span className="text-[10px] uppercase font-mono font-bold bg-white/20 text-teal-100 px-2 py-0.5 rounded-full">
-                  RBAC v1.0
+                <span className="text-[10px] uppercase font-mono font-bold bg-white/20 text-purple-100 px-2 py-0.5 rounded-full">
+                  Super Admin
                 </span>
               </div>
-              <p className="text-xs text-teal-100/90 mt-0.5">
-                Switch between clinical dummy logins or log into your verified hospital staff profile.
+              <p className="text-xs text-purple-100/80 mt-0.5">
+                Central Hospital Dispensary & Formulary Management
               </p>
             </div>
           </div>
 
           {/* Currently Active Badge */}
-          {currentUser && (
-            <div className="mt-4 inline-flex items-center gap-2 bg-white/15 border border-white/20 rounded-xl px-3 py-1.5 text-xs text-white backdrop-blur-md">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span>Currently active: <strong className="font-bold">{currentUser.name}</strong> ({ROLES[currentUser.role]?.shortLabel})</span>
-            </div>
-          )}
+          <div className="mt-4 inline-flex items-center gap-2 bg-white/15 border border-white/20 rounded-xl px-3 py-1.5 text-xs text-white backdrop-blur-md">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span>Active Administrator: <strong className="font-bold">{currentUser?.name || 'Dr. Yatish'}</strong></span>
+          </div>
         </div>
 
         {/* Modal Body */}
-        <div className="p-5 sm:p-6 overflow-y-auto space-y-6">
+        <div className="p-5 sm:p-6 overflow-y-auto space-y-5">
 
-          {currentUser?.role !== 'admin_supervisor' ? (
-            /* NON-ADMIN VIEW (e.g. Pharmacist): Strictly cannot elevate to Admin without password */
-            <div className="space-y-4">
-              <div className="p-4 rounded-2xl bg-teal-50/70 border border-teal-200">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-teal-700 text-white flex items-center justify-center font-black text-base shadow-sm">
-                      {currentUser?.name?.slice(0, 2).toUpperCase() || 'PH'}
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-black text-slate-900">{currentUser?.name}</h4>
-                      <p className="text-xs text-teal-800 font-mono font-bold mt-0.5">
-                        Username: {currentUser?.username}
-                      </p>
-                      <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full border mt-1 ${ROLES[currentUser?.role]?.tagBg || 'bg-slate-100'}`}>
-                        {ROLES[currentUser?.role]?.label}
-                      </span>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsAuthModalOpen(false)
-                      logout()
-                    }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-all cursor-pointer shadow-2xs"
-                  >
-                    <LogOut className="w-3.5 h-3.5" />
-                    <span>Sign Out</span>
-                  </button>
-                </div>
-
-                <div className="mt-4 pt-3 border-t border-teal-200/60 text-xs space-y-2">
-                  <span className="font-extrabold uppercase tracking-wider text-[10px] font-mono text-teal-950">
-                    Your Authorized Clinical Permissions:
-                  </span>
-                  <div className="grid grid-cols-2 gap-2 text-[11px]">
-                    <div className="flex items-center gap-1.5 text-emerald-800 font-medium">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>Patient POS Billing</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-emerald-800 font-medium">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>Inward Medicine Stock</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-rose-700 font-medium">
-                      <Lock className="w-3.5 h-3.5 text-rose-500" />
-                      <span>Edit Medicines (Admin Only)</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-rose-700 font-medium">
-                      <Lock className="w-3.5 h-3.5 text-rose-500" />
-                      <span>Manage Users (Admin Only)</span>
-                    </div>
-                  </div>
-                </div>
+          {/* Profile Card */}
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-purple-700 text-white flex items-center justify-center font-black text-base shadow-sm">
+                <User className="w-6 h-6 text-white" />
               </div>
-
-              {/* Security Alert: Elevation Restriction */}
-              <div className="p-3.5 rounded-2xl bg-amber-50/90 border border-amber-300 text-amber-950 text-xs flex items-start gap-2.5">
-                <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                <div className="leading-relaxed">
-                  <strong className="block font-bold text-amber-950">
-                    Administrator Elevation Restricted
-                  </strong>
-                  You are signed in under a dispensary role. Pharmacists cannot switch to Super Admin without proper credentials. To access administrative controls, please click <strong>Sign Out</strong> and authenticate with the Super Admin username and password.
-                </div>
+              <div>
+                <h4 className="text-sm font-black text-slate-900">{currentUser?.name || 'Dr. Yatish'}</h4>
+                <p className="text-xs text-purple-800 font-mono font-bold mt-0.5">
+                  Username: {currentUser?.username || 'admin'}
+                </p>
+                <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full border border-purple-200 bg-purple-50 text-purple-700 mt-1">
+                  Super Administrator (Full System Control)
+                </span>
               </div>
             </div>
-          ) : (
-            /* SUPER ADMIN VIEW: Full authority to inspect and quick switch for testing */
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <label className="text-xs uppercase font-extrabold text-slate-500 tracking-wider font-mono flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                  Admin Profile Switcher & Test Accounts
-                </label>
-                <span className="text-[11px] text-teal-700 font-bold">Admin Authority</span>
-              </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {users.map((u) => {
-                  const role = ROLES[u.role] || ROLES.pharmacist
-                  const Icon = roleIcons[u.role] || User
-                  const isActive = currentUser?.id === u.id
-
-                  return (
-                    <div
-                      key={u.id}
-                      onClick={() => quickSwitchUser(u.id)}
-                      className={`p-3.5 rounded-2xl border transition-all cursor-pointer relative text-left ${
-                        isActive
-                          ? 'border-teal-600 bg-teal-50/60 shadow-xs ring-2 ring-teal-500/20'
-                          : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/80 bg-white'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-white bg-gradient-to-br ${role.gradient} shadow-2xs`}>
-                            <Icon className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <h4 className="text-xs font-black text-slate-900 leading-tight flex items-center gap-1.5">
-                              {u.name}
-                              {isActive && (
-                                <CheckCircle2 className="w-3.5 h-3.5 text-teal-600" />
-                              )}
-                            </h4>
-                            <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full border mt-0.5 ${role.tagBg}`}>
-                              {role.shortLabel}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed mb-2.5">
-                        {role.description}
-                      </p>
-
-                      <div className="flex items-center justify-between text-[10px] font-mono pt-2 border-t border-slate-100 text-slate-500">
-                        <span>User: <strong className="text-slate-800">{u.username}</strong></span>
-                        <span>Pass: <strong className="text-slate-800">{u.password}</strong></span>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Manual Username/Password Login Form Toggle */}
-          <div className="pt-2 border-t border-slate-100">
             <button
-              onClick={() => setIsManualLogin(!isManualLogin)}
-              className="text-xs text-teal-700 hover:text-teal-900 font-bold flex items-center gap-1 cursor-pointer"
+              type="button"
+              onClick={() => {
+                setIsAuthModalOpen(false)
+                logout()
+              }}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-all cursor-pointer shadow-2xs"
             >
-              <KeyRound className="w-3.5 h-3.5" />
-              <span>{isManualLogin ? 'Hide Manual Staff Login' : 'Or log in with username & password'}</span>
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Sign Out</span>
             </button>
-
-            {isManualLogin && (
-              <form onSubmit={handleManualSubmit} className="mt-4 p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
-                {loginError && (
-                  <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
-                    {loginError}
-                  </div>
-                )}
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-[11px] font-bold text-slate-600 uppercase font-mono block mb-1">
-                      Username
-                    </label>
-                    <div className="relative">
-                      <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="text"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        placeholder="e.g. admin or pharmacist"
-                        className="w-full bg-white border border-slate-300 focus:border-teal-600 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 outline-none font-medium"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] font-bold text-slate-600 uppercase font-mono block mb-1">
-                      Password
-                    </label>
-                    <div className="relative">
-                      <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="••••••••"
-                        className="w-full bg-white border border-slate-300 focus:border-teal-600 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 outline-none font-medium"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex justify-end pt-1">
-                  <button
-                    type="submit"
-                    className="flex items-center gap-1.5 bg-teal-600 hover:bg-teal-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-xs transition-colors cursor-pointer"
-                  >
-                    <span>Authenticate Account</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </form>
-            )}
           </div>
 
-          {/* Role Access Matrix Summary */}
-          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/90 text-xs text-slate-600 space-y-2">
-            <h5 className="font-extrabold text-slate-800 text-[11px] uppercase tracking-wider font-mono">
-              Clinical Security Guidelines:
-            </h5>
-            <ul className="space-y-1.5 text-[11px] text-slate-600">
-              <li className="flex items-start gap-1.5">
-                <span className="text-purple-600 font-bold">• Super Admin:</span>
-                <span>Full editing authority + Create new user accounts and assign roles.</span>
-              </li>
-              <li className="flex items-start gap-1.5">
-                <span className="text-teal-600 font-bold">• Medical Officer (Doctor):</span>
-                <span>Formulary review + Can authorize package & medicine clinical discounts.</span>
-              </li>
-              <li className="flex items-start gap-1.5">
-                <span className="text-amber-600 font-bold">• Supervisor (Read-Only):</span>
-                <span>Audit & review only. All edit, delete, and invoice generation buttons are strictly locked.</span>
-              </li>
-              <li className="flex items-start gap-1.5">
-                <span className="text-blue-600 font-bold">• Pharmacist:</span>
-                <span>Billing and adding medicines. Cannot add or alter discounts; pre-approved doctor discounts reflect directly.</span>
-              </li>
-            </ul>
+          {/* Admin Authority Privileges */}
+          <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-50 to-purple-50/30 border border-slate-200 text-xs space-y-2.5">
+            <span className="font-extrabold uppercase tracking-wider text-[11px] font-mono text-slate-700 flex items-center gap-1.5">
+              <Settings className="w-3.5 h-3.5 text-purple-600" />
+              Super Admin System Privileges:
+            </span>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] pt-1">
+              <div className="flex items-center gap-2 text-slate-800 font-medium">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>Full Medicine Formulary & Stock Inward</span>
+              </div>
+              <div className="flex items-center gap-2 text-slate-800 font-medium">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>POS High-Speed Billing Terminal</span>
+              </div>
+              <div className="flex items-center gap-2 text-slate-800 font-medium">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>Overall Bill Package Discount Control</span>
+              </div>
+              <div className="flex items-center gap-2 text-slate-800 font-medium">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>Individual Medicine Formulation Discounts</span>
+              </div>
+              <div className="flex items-center gap-2 text-slate-800 font-medium">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>Critical Expiry Radar & Stock Auditing</span>
+              </div>
+              <div className="flex items-center gap-2 text-slate-800 font-medium">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>Staff Account Creation & Role Admin</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Quick Links */}
+          <div className="space-y-2 pt-1">
+            <button
+              onClick={() => {
+                setIsAuthModalOpen(false)
+                setIsUserManagementModalOpen(true)
+              }}
+              className="w-full flex items-center justify-between p-3 rounded-2xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-900 transition-all cursor-pointer font-bold text-xs"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center">
+                  <Users className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="text-slate-900 font-extrabold">User & Role Management</div>
+                  <div className="text-[10px] text-purple-700 font-normal">Add, edit, or remove hospital staff logins</div>
+                </div>
+              </div>
+              <span className="text-[11px] font-mono text-purple-700 font-black">Open ➔</span>
+            </button>
           </div>
 
         </div>
@@ -323,7 +160,7 @@ export const AuthModal = () => {
         {/* Modal Footer */}
         <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
           <div className="text-[11px] text-slate-500 font-mono">
-            RVS Hospital Role-Based Access Control
+            RVS Hospital Dispensary • Super Admin
           </div>
           <button
             onClick={() => setIsAuthModalOpen(false)}
