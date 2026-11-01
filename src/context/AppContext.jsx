@@ -263,9 +263,11 @@ export const AppProvider = ({ children }) => {
       phone: userData.phone || ''
     }
     setUsers(prev => [...prev, newUser])
-    try {
-      await apiCreateUser(newUser)
-    } catch (e) {}
+    if (backendConnected) {
+      try {
+        await apiCreateUser(newUser)
+      } catch (e) {}
+    }
     notify('User Created', `Account for ${newUser.name} (${ROLES[newUser.role]?.shortLabel}) was added.`, 'success')
     return true
   }
@@ -281,9 +283,11 @@ export const AppProvider = ({ children }) => {
     }
     const target = users.find(u => u.id === userId)
     setUsers(prev => prev.filter(u => u.id !== userId))
-    try {
-      await apiDeleteUser(userId)
-    } catch (e) {}
+    if (backendConnected) {
+      try {
+        await apiDeleteUser(userId)
+      } catch (e) {}
+    }
     notify('User Removed', `Account for ${target?.name || 'User'} has been removed.`, 'info')
     return true
   }
@@ -301,13 +305,15 @@ export const AppProvider = ({ children }) => {
     }
     setPreApprovedDiscount(updated)
     setDiscountPercent(num)
-    try {
-      await apiUpdateDiscountPolicy({
-        discount_percent: num,
-        authorized_by: updated.appliedBy,
-        reason: updated.reason
-      })
-    } catch (e) {}
+    if (backendConnected) {
+      try {
+        await apiUpdateDiscountPolicy({
+          discount_percent: num,
+          authorized_by: updated.appliedBy,
+          reason: updated.reason
+        })
+      } catch (e) {}
+    }
     notify('Discount Authorized', `${num}% discount applied & locked for dispensary pharmacists by ${currentUser.name}.`, 'success')
     return true
   }
@@ -461,17 +467,21 @@ export const AppProvider = ({ children }) => {
     }
 
     // Sync to PythonAnywhere Flask API
-    try {
-      await apiCreateMedicine(newMed)
-      if (newBatch) {
-        await apiCreateBatch(newBatch)
+    if (backendConnected) {
+      try {
+        await apiCreateMedicine(newMed)
+        if (newBatch) {
+          await apiCreateBatch(newBatch)
+        }
+        notify(
+          'Medicine & Expiry Saved!',
+          `${newMed.name} (Batch: ${newBatch?.batch_number || 'N/A'}) saved to PythonAnywhere!`,
+          'success'
+        )
+      } catch (e) {
+        notify('Medicine Added', `${newMed.name} recorded in dispensary formulary.`, 'info')
       }
-      notify(
-        'Medicine & Expiry Saved!',
-        `${newMed.name} (Batch: ${newBatch?.batch_number || 'N/A'}) saved to PythonAnywhere!`,
-        'success'
-      )
-    } catch (e) {
+    } else {
       notify('Medicine Added', `${newMed.name} recorded in dispensary formulary.`, 'info')
     }
 
@@ -518,9 +528,11 @@ export const AppProvider = ({ children }) => {
       })
     }
 
-    try {
-      await apiUpdateMedicine(id, cleanMedData)
-    } catch (e) {}
+    if (backendConnected) {
+      try {
+        await apiUpdateMedicine(id, cleanMedData)
+      } catch (e) {}
+    }
     notify('Formulary & Pricing Saved', `${medData.name || 'Medicine'} details, pricing & MO discount updated successfully.`, 'success')
   }
 
@@ -528,9 +540,11 @@ export const AppProvider = ({ children }) => {
   const deleteMedicine = async (id) => {
     setMedicines(prev => prev.filter(m => m.id !== id))
     setBatches(prev => prev.filter(b => b.medicine_id !== id))
-    try {
-      await apiDeleteMedicine(id)
-    } catch (e) {}
+    if (backendConnected) {
+      try {
+        await apiDeleteMedicine(id)
+      } catch (e) {}
+    }
     notify('Medicine Removed', 'Item deleted from pharmacy stock.', 'warning')
   }
 
@@ -545,9 +559,11 @@ export const AppProvider = ({ children }) => {
       current_stock: parseInt(batchData.current_stock, 10) || 0
     }
     setBatches(prev => [newBatch, ...prev])
-    try {
-      await apiCreateBatch(newBatch)
-    } catch (e) {}
+    if (backendConnected) {
+      try {
+        await apiCreateBatch(newBatch)
+      } catch (e) {}
+    }
     notify('Stock Inward Added', `Batch ${newBatch.batch_number} recorded (+${newBatch.current_stock} units).`, 'success')
     return newBatch
   }
@@ -555,9 +571,11 @@ export const AppProvider = ({ children }) => {
   // Update Batch
   const updateBatch = async (batchId, updatedData) => {
     setBatches(prev => prev.map(b => b.id === batchId ? { ...b, ...updatedData } : b))
-    try {
-      await apiUpdateBatch(batchId, updatedData)
-    } catch (e) {}
+    if (backendConnected) {
+      try {
+        await apiUpdateBatch(batchId, updatedData)
+      } catch (e) {}
+    }
     notify('Batch Updated', 'Batch stock/expiry updated successfully.', 'success')
   }
 
@@ -577,9 +595,11 @@ export const AppProvider = ({ children }) => {
       created_at: new Date().toISOString()
     }
     setPatients(prev => [newPat, ...prev])
-    try {
-      await apiCreatePatient(newPat)
-    } catch (e) {}
+    if (backendConnected) {
+      try {
+        await apiCreatePatient(newPat)
+      } catch (e) {}
+    }
     notify('Patient Registered', `${newPat.name} (UHID: ${newPat.uhid}) registered.`, 'success')
     return newPat
   }
@@ -598,9 +618,11 @@ export const AppProvider = ({ children }) => {
       created_at: new Date().toISOString()
     }
     setSuppliers(prev => [newSup, ...prev])
-    try {
-      await apiCreateSupplier(newSup)
-    } catch (e) {}
+    if (backendConnected) {
+      try {
+        await apiCreateSupplier(newSup)
+      } catch (e) {}
+    }
     notify('Supplier Added', `${newSup.company_name} registered.`, 'success')
     return newSup
   }
@@ -621,9 +643,11 @@ export const AppProvider = ({ children }) => {
       created_at: new Date().toISOString()
     }
     setRequisitions(prev => [newReq, ...prev])
-    try {
-      await apiCreateRequisition(newReq)
-    } catch (e) {}
+    if (backendConnected) {
+      try {
+        await apiCreateRequisition(newReq)
+      } catch (e) {}
+    }
     notify('Drug Requisition Issued', `Requisition #${newReq.requisition_no} dispatched to ${newReq.department}.`, 'success')
     return newReq
   }
@@ -631,9 +655,11 @@ export const AppProvider = ({ children }) => {
   // Update Requisition Status
   const updateRequisitionStatus = async (id, status) => {
     setRequisitions(prev => prev.map(r => r.id === id ? { ...r, status } : r))
-    try {
-      await apiUpdateRequisitionStatus(id, status)
-    } catch (e) {}
+    if (backendConnected) {
+      try {
+        await apiUpdateRequisitionStatus(id, status)
+      } catch (e) {}
+    }
     notify('Status Updated', `Requisition marked as ${status}.`, 'info')
   }
 
@@ -798,10 +824,14 @@ export const AppProvider = ({ children }) => {
     setActiveInvoice(newSale)
 
     // 4. Cloud Write to PythonAnywhere Flask API & MySQL
-    try {
-      await apiCreateSale(newSale)
-      notify('Invoice Generated!', `Invoice #${newSale.invoice_number} saved to PythonAnywhere MySQL for ₹${newSale.grand_total.toFixed(2)}.`, 'success')
-    } catch (e) {
+    if (backendConnected) {
+      try {
+        await apiCreateSale(newSale)
+        notify('Invoice Generated!', `Invoice #${newSale.invoice_number} saved to PythonAnywhere MySQL for ₹${newSale.grand_total.toFixed(2)}.`, 'success')
+      } catch (e) {
+        notify('Invoice Generated (Local)', `Invoice #${newSale.invoice_number} saved locally for ₹${newSale.grand_total.toFixed(2)}.`, 'info')
+      }
+    } else {
       notify('Invoice Generated (Local)', `Invoice #${newSale.invoice_number} saved locally for ₹${newSale.grand_total.toFixed(2)}.`, 'info')
     }
 

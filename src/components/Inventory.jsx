@@ -19,7 +19,8 @@ import {
   Trash2,
   PackagePlus,
   Info,
-  FileUp
+  FileUp,
+  Sparkles
 } from 'lucide-react'
 
 export const Inventory = ({ onOpenMedicineModal, onOpenBatchModal, onEditMedicine, onOpenPdfModal }) => {

@@ -34,11 +34,10 @@ export const MedicineModal = ({ isOpen, onClose, initialData = null, targetMedic
   const isBatchOnly = Boolean(targetMedicineForBatch)
   const isEditMedicine = Boolean(initialData && !targetMedicineForBatch)
 
-  // MO (Medical Officer) or Super Admin authority check
+  // Only MO (Medical Officer) and Super Admin have authority to modify medicine prices and discounts
   const isMoOrAdmin =
     currentUser?.role === 'admin_supervisor' ||
-    currentUser?.role === 'doctor_mo' ||
-    currentRole?.canEdit
+    currentUser?.role === 'doctor_mo'
 
   // Medicine Master Form State
   const [medForm, setMedForm] = useState({
@@ -156,6 +155,9 @@ export const MedicineModal = ({ isOpen, onClose, initialData = null, targetMedic
 
   if (!isOpen) return null
 
+  const canEditPricing = isMoOrAdmin || !isEditMedicine
+  const canEditStock = isMoOrAdmin || canEdit || !isEditMedicine
+
   const handleSubmit = (e) => {
     e.preventDefault()
 
@@ -172,11 +174,26 @@ export const MedicineModal = ({ isOpen, onClose, initialData = null, targetMedic
         supplier_name: batchForm.supplier_name
       })
     } else if (isEditMedicine) {
-      // Updating medicine formulary details + batch pricing and stock!
-      updateMedicine(initialData.id, medForm, batchForm)
+      if (!isMoOrAdmin) {
+        // Protect pricing and discounts from being altered by pharmacist
+        const safeMedForm = {
+          ...medForm,
+          default_discount_percent: initialData.default_discount_percent ?? initialData.discount_percent ?? 0
+        }
+        const safeBatchForm = {
+          ...batchForm,
+          mrp: initialData.mrp ?? batchForm.mrp,
+          selling_price: initialData.selling_price ?? batchForm.selling_price
+        }
+        updateMedicine(initialData.id, safeMedForm, safeBatchForm)
+      } else {
+        updateMedicine(initialData.id, medForm, batchForm)
+      }
     } else {
       // Creating New Medicine + Initial Batch with Expiry Date & Stock!
-      addMedicineWithBatch(medForm, batchForm)
+      // Pharmacists cannot set discounts on new medicines
+      const safeMedForm = !isMoOrAdmin ? { ...medForm, default_discount_percent: 0 } : medForm
+      addMedicineWithBatch(safeMedForm, batchForm)
     }
 
     onClose()
@@ -201,9 +218,15 @@ export const MedicineModal = ({ isOpen, onClose, initialData = null, targetMedic
                     ? `Edit Medicine & Pricing: ${initialData.name}`
                     : 'Register New Medicine & Stock'}
                 </h3>
-                {isMoOrAdmin && (
-                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/30 font-mono">
-                    MO & Super Admin Edit
+                {isMoOrAdmin ? (
+                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/30 font-mono flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3 text-teal-300" />
+                    MO & Super Admin Full Access
+                  </span>
+                ) : (
+                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono flex items-center gap-1">
+                    <Lock className="w-3 h-3 text-amber-300" />
+                    Pharmacist: Discounts Locked
                   </span>
                 )}
               </div>
@@ -212,7 +235,7 @@ export const MedicineModal = ({ isOpen, onClose, initialData = null, targetMedic
                   ? 'Add a new manufactured batch with expiry date & cost'
                   : isEditMedicine
                   ? 'Update formulary info, MRP, selling price, stock count & pre-approved doctor discounts.'
-                  : 'Enter medicine formula, rack location, batch number, pricing & doctor discount.'}
+                  : 'Enter medicine formula, rack location, batch number, pricing & initial stock.'}
               </p>
             </div>
           </div>
@@ -365,7 +388,7 @@ export const MedicineModal = ({ isOpen, onClose, initialData = null, targetMedic
             </div>
           )}
 
-          {/* SECTION 2: PRICING, STOCK & PRE-APPROVED DOCTOR DISCOUNT (MO & SUPER ADMIN EDITABLE) */}
+          {/* SECTION 2: PRICING, STOCK & PRE-APPROVED DOCTOR DISCOUNT */}
           <div className="space-y-3 pt-2">
             <div className="flex items-center justify-between text-teal-900 font-extrabold uppercase tracking-wider text-[11px] pb-1 border-b border-teal-200">
               <div className="flex items-center gap-1.5">
@@ -380,18 +403,30 @@ export const MedicineModal = ({ isOpen, onClose, initialData = null, targetMedic
               ) : (
                 <span className="text-[10px] text-amber-700 font-bold flex items-center gap-1">
                   <Lock className="w-3 h-3 text-amber-600" />
-                  Read-Only for Pharmacist
+                  Discounts Locked for Pharmacist
                 </span>
               )}
             </div>
 
             <div className="bg-teal-50/60 border border-teal-200/90 rounded-2xl p-4 space-y-4">
               
+              {!isMoOrAdmin && (
+                <div className="p-3.5 rounded-xl bg-amber-50/90 border border-amber-300 text-amber-900 text-xs flex items-start gap-2.5">
+                  <Lock className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="leading-relaxed">
+                    <strong className="block font-bold text-amber-950">
+                      Dispensary Restriction: You Cannot Add or Edit Medicine Discounts
+                    </strong>
+                    You are signed in as <strong>{currentUser?.name || 'Dispensary Pharmacist'}</strong>. Hospital discount policies can strictly only be authorized by the <strong>Medical Officer (MO)</strong> or <strong>Super Admin</strong>. Pharmacists cannot assign discounts.
+                  </div>
+                </div>
+              )}
+              
               {/* Pricing Grid: MRP, Selling Price, Cost Price */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="text-slate-800 font-bold block mb-1 text-xs">
-                    MRP (₹) *
+                    MRP (₹) * {!canEditPricing && <span className="text-amber-700 font-normal">(Locked by MO)</span>}
                   </label>
                   <div className="relative">
                     <span className="absolute left-3 top-2.5 text-slate-400 font-bold text-xs">₹</span>
@@ -399,7 +434,7 @@ export const MedicineModal = ({ isOpen, onClose, initialData = null, targetMedic
                       type="number"
                       step="0.01"
                       required
-                      disabled={!isMoOrAdmin}
+                      disabled={!canEditPricing}
                       value={batchForm.mrp}
                       onChange={(e) => {
                         const val = e.target.value
@@ -418,7 +453,7 @@ export const MedicineModal = ({ isOpen, onClose, initialData = null, targetMedic
 
                 <div>
                   <label className="text-slate-800 font-bold block mb-1 text-xs">
-                    Selling Price / Bill Rate (₹) *
+                    Selling Price / Bill Rate (₹) * {!canEditPricing && <span className="text-amber-700 font-normal">(Locked by MO)</span>}
                   </label>
                   <div className="relative">
                     <span className="absolute left-3 top-2.5 text-teal-600 font-bold text-xs">₹</span>
@@ -426,7 +461,7 @@ export const MedicineModal = ({ isOpen, onClose, initialData = null, targetMedic
                       type="number"
                       step="0.01"
                       required
-                      disabled={!isMoOrAdmin}
+                      disabled={!canEditPricing}
                       value={batchForm.selling_price}
                       onChange={(e) => setBatchForm({ ...batchForm, selling_price: e.target.value })}
                       placeholder="70.00"
@@ -445,7 +480,7 @@ export const MedicineModal = ({ isOpen, onClose, initialData = null, targetMedic
                     <input
                       type="number"
                       step="0.01"
-                      disabled={!isMoOrAdmin}
+                      disabled={!canEditPricing}
                       value={batchForm.cost_price}
                       onChange={(e) => setBatchForm({ ...batchForm, cost_price: e.target.value })}
                       placeholder="45.00"
@@ -467,7 +502,7 @@ export const MedicineModal = ({ isOpen, onClose, initialData = null, targetMedic
                     type="number"
                     required
                     min="0"
-                    disabled={!isMoOrAdmin}
+                    disabled={!canEditStock}
                     value={batchForm.current_stock}
                     onChange={(e) => setBatchForm({ ...batchForm, current_stock: e.target.value })}
                     placeholder="50"
@@ -483,7 +518,7 @@ export const MedicineModal = ({ isOpen, onClose, initialData = null, targetMedic
                   <input
                     type="text"
                     required
-                    disabled={!isMoOrAdmin}
+                    disabled={!canEditStock}
                     value={batchForm.batch_number}
                     onChange={(e) => setBatchForm({ ...batchForm, batch_number: e.target.value })}
                     placeholder="e.g. AUG-9021"
@@ -496,19 +531,19 @@ export const MedicineModal = ({ isOpen, onClose, initialData = null, targetMedic
                     <label className="text-slate-800 font-bold block text-xs">
                       Expiry Date *
                     </label>
-                    {isMoOrAdmin && (
+                    {canEditStock && (
                       <div className="flex items-center gap-1">
                         <button
                           type="button"
                           onClick={() => setQuickExpiry(1)}
-                          className="px-1.5 py-0.5 rounded bg-white text-teal-700 hover:bg-teal-100 border border-teal-200 text-[10px] font-bold"
+                          className="px-1.5 py-0.5 rounded bg-white text-teal-700 hover:bg-teal-100 border border-teal-200 text-[10px] font-bold cursor-pointer"
                         >
                           +1 Yr
                         </button>
                         <button
                           type="button"
                           onClick={() => setQuickExpiry(2)}
-                          className="px-1.5 py-0.5 rounded bg-white text-teal-700 hover:bg-teal-100 border border-teal-200 text-[10px] font-bold"
+                          className="px-1.5 py-0.5 rounded bg-white text-teal-700 hover:bg-teal-100 border border-teal-200 text-[10px] font-bold cursor-pointer"
                         >
                           +2 Yrs
                         </button>
@@ -518,7 +553,7 @@ export const MedicineModal = ({ isOpen, onClose, initialData = null, targetMedic
                   <input
                     type="date"
                     required
-                    disabled={!isMoOrAdmin}
+                    disabled={!canEditStock}
                     value={batchForm.expiry_date}
                     onChange={(e) => setBatchForm({ ...batchForm, expiry_date: e.target.value })}
                     className="w-full bg-white border border-slate-300 disabled:bg-slate-100 disabled:text-slate-500 focus:border-teal-600 rounded-xl px-3 py-2 text-sm text-slate-900 outline-none font-mono font-bold cursor-pointer"
@@ -526,7 +561,7 @@ export const MedicineModal = ({ isOpen, onClose, initialData = null, targetMedic
                 </div>
               </div>
 
-              {/* Pre-Approved Medicine Discount (%) - Set by MO / Admin */}
+              {/* Pre-Approved Medicine Discount (%) - Strictly Authorized by MO / Super Admin */}
               <div className="pt-3 border-t border-teal-200/70">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
                   <div>
@@ -535,62 +570,79 @@ export const MedicineModal = ({ isOpen, onClose, initialData = null, targetMedic
                       Pre-Approved Medicine Discount (%) for Pharmacist POS
                     </label>
                     <p className="text-[11px] text-slate-600 mt-0.5">
-                      Set by MO or Super Admin. When pharmacists add this medicine to any bill, this discount % automatically applies.
+                      Set by MO or Super Admin. Automatically applies when dispensary pharmacists add this medicine to billing.
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-1">
-                    {[0, 5, 10, 15, 20].map((disc) => (
-                      <button
-                        key={disc}
-                        type="button"
-                        disabled={!isMoOrAdmin}
-                        onClick={() => setMedForm({ ...medForm, default_discount_percent: disc })}
-                        className={`px-2 py-1 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
-                          Number(medForm.default_discount_percent) === disc
-                            ? 'bg-teal-700 text-white shadow-xs'
-                            : 'bg-white text-slate-700 hover:bg-teal-50 border border-slate-300'
-                        }`}
-                      >
-                        {disc}%
-                      </button>
-                    ))}
-                  </div>
+                  {isMoOrAdmin ? (
+                    <div className="flex items-center gap-1">
+                      {[0, 5, 10, 15, 20].map((disc) => (
+                        <button
+                          key={disc}
+                          type="button"
+                          onClick={() => setMedForm({ ...medForm, default_discount_percent: disc })}
+                          className={`px-2 py-1 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
+                            Number(medForm.default_discount_percent) === disc
+                              ? 'bg-teal-700 text-white shadow-xs'
+                              : 'bg-white text-slate-700 hover:bg-teal-50 border border-slate-300'
+                          }`}
+                        >
+                          {disc}%
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-[11px] font-bold text-amber-900 bg-amber-100/90 px-2.5 py-1 rounded-lg border border-amber-300 flex items-center gap-1">
+                      <Lock className="w-3 h-3 text-amber-700" />
+                      Discount Locked (MO Authority Only)
+                    </span>
+                  )}
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <div className="w-32 relative">
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="0.5"
-                      disabled={!isMoOrAdmin}
-                      value={medForm.default_discount_percent}
-                      onChange={(e) =>
-                        setMedForm({
-                          ...medForm,
-                          default_discount_percent: Math.max(0, Math.min(100, parseFloat(e.target.value) || 0))
-                        })
-                      }
-                      className="w-full bg-white border border-slate-300 disabled:bg-slate-100 disabled:text-slate-500 focus:border-teal-600 rounded-xl pl-3 pr-7 py-2 text-sm text-slate-900 outline-none font-mono font-black"
-                    />
-                    <span className="absolute right-3 top-2.5 text-teal-700 font-extrabold text-xs">%</span>
-                  </div>
+                {isMoOrAdmin ? (
+                  <div className="flex items-center gap-3">
+                    <div className="w-32 relative">
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.5"
+                        value={medForm.default_discount_percent}
+                        onChange={(e) =>
+                          setMedForm({
+                            ...medForm,
+                            default_discount_percent: Math.max(0, Math.min(100, parseFloat(e.target.value) || 0))
+                          })
+                        }
+                        className="w-full bg-white border border-slate-300 focus:border-teal-600 rounded-xl pl-3 pr-7 py-2 text-sm text-slate-900 outline-none font-mono font-black"
+                      />
+                      <span className="absolute right-3 top-2.5 text-teal-700 font-extrabold text-xs">%</span>
+                    </div>
 
-                  <div className="text-xs text-slate-600 font-medium">
-                    {Number(medForm.default_discount_percent) > 0 ? (
-                      <span className="text-emerald-700 font-bold flex items-center gap-1">
-                        <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-                        Patients save {medForm.default_discount_percent}% off ₹{batchForm.selling_price || batchForm.mrp} (Net: ₹{(
-                          (parseFloat(batchForm.selling_price || batchForm.mrp || 0) * (1 - Number(medForm.default_discount_percent) / 100))
-                        ).toFixed(2)})
-                      </span>
-                    ) : (
-                      <span className="text-slate-500">No automatic discount set (Full bill rate charged).</span>
-                    )}
+                    <div className="text-xs text-slate-600 font-medium">
+                      {Number(medForm.default_discount_percent) > 0 ? (
+                        <span className="text-emerald-700 font-bold flex items-center gap-1">
+                          <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                          Patients save {medForm.default_discount_percent}% off ₹{batchForm.selling_price || batchForm.mrp} (Net: ₹{(
+                            (parseFloat(batchForm.selling_price || batchForm.mrp || 0) * (1 - Number(medForm.default_discount_percent) / 100))
+                          ).toFixed(2)})
+                        </span>
+                      ) : (
+                        <span className="text-slate-500">No automatic discount set (Full bill rate charged).</span>
+                      )}
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="p-3 rounded-xl bg-amber-100/60 border border-amber-300/80 text-xs text-amber-950 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Lock className="w-4 h-4 text-amber-700 shrink-0" />
+                      <span>Pre-approved clinical discount for this medicine:</span>
+                    </div>
+                    <span className="font-mono font-extrabold text-xs px-2.5 py-1 rounded bg-white border border-amber-300 text-amber-950 shadow-xs">
+                      {Number(medForm.default_discount_percent) > 0 ? `${medForm.default_discount_percent}% (Set by MO)` : '0% (Standard Bill Rate - No Discount)'}
+                    </span>
+                  </div>
+                )}
               </div>
 
             </div>
