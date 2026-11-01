@@ -13,7 +13,9 @@ import {
   Sparkles,
   X,
   ShieldCheck,
-  Building
+  Building,
+  LogOut,
+  ShieldAlert
 } from 'lucide-react'
 
 export const AuthModal = () => {
@@ -24,7 +26,8 @@ export const AuthModal = () => {
     currentUser,
     login,
     quickSwitchUser,
-    ROLES
+    ROLES,
+    logout
   } = useApp()
 
   const [username, setUsername] = useState('')
@@ -95,64 +98,135 @@ export const AuthModal = () => {
         {/* Modal Body */}
         <div className="p-5 sm:p-6 overflow-y-auto space-y-6">
 
-          {/* Quick Demo Switcher Cards (Requested: dummy logins to test) */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <label className="text-xs uppercase font-extrabold text-slate-500 tracking-wider font-mono flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                1-Click Quick Demo Profiles
-              </label>
-              <span className="text-[11px] text-teal-700 font-bold">Instant Login</span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {users.map((u) => {
-                const role = ROLES[u.role] || ROLES.pharmacist
-                const Icon = roleIcons[u.role] || User
-                const isActive = currentUser?.id === u.id
-
-                return (
-                  <div
-                    key={u.id}
-                    onClick={() => quickSwitchUser(u.id)}
-                    className={`p-3.5 rounded-2xl border transition-all cursor-pointer relative text-left ${
-                      isActive
-                        ? 'border-teal-600 bg-teal-50/60 shadow-xs ring-2 ring-teal-500/20'
-                        : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/80 bg-white'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-white bg-gradient-to-br ${role.gradient} shadow-2xs`}>
-                          <Icon className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <h4 className="text-xs font-black text-slate-900 leading-tight flex items-center gap-1.5">
-                            {u.name}
-                            {isActive && (
-                              <CheckCircle2 className="w-3.5 h-3.5 text-teal-600" />
-                            )}
-                          </h4>
-                          <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full border mt-0.5 ${role.tagBg}`}>
-                            {role.shortLabel}
-                          </span>
-                        </div>
-                      </div>
+          {currentUser?.role !== 'admin_supervisor' ? (
+            /* NON-ADMIN VIEW (e.g. Pharmacist): Strictly cannot elevate to Admin without password */
+            <div className="space-y-4">
+              <div className="p-4 rounded-2xl bg-teal-50/70 border border-teal-200">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-teal-700 text-white flex items-center justify-center font-black text-base shadow-sm">
+                      {currentUser?.name?.slice(0, 2).toUpperCase() || 'PH'}
                     </div>
-
-                    <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed mb-2.5">
-                      {role.description}
-                    </p>
-
-                    <div className="flex items-center justify-between text-[10px] font-mono pt-2 border-t border-slate-100 text-slate-500">
-                      <span>User: <strong className="text-slate-800">{u.username}</strong></span>
-                      <span>Pass: <strong className="text-slate-800">{u.password}</strong></span>
+                    <div>
+                      <h4 className="text-sm font-black text-slate-900">{currentUser?.name}</h4>
+                      <p className="text-xs text-teal-800 font-mono font-bold mt-0.5">
+                        Username: {currentUser?.username}
+                      </p>
+                      <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full border mt-1 ${ROLES[currentUser?.role]?.tagBg || 'bg-slate-100'}`}>
+                        {ROLES[currentUser?.role]?.label}
+                      </span>
                     </div>
                   </div>
-                )
-              })}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsAuthModalOpen(false)
+                      logout()
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-teal-200/60 text-xs space-y-2">
+                  <span className="font-extrabold uppercase tracking-wider text-[10px] font-mono text-teal-950">
+                    Your Authorized Clinical Permissions:
+                  </span>
+                  <div className="grid grid-cols-2 gap-2 text-[11px]">
+                    <div className="flex items-center gap-1.5 text-emerald-800 font-medium">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Patient POS Billing</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-emerald-800 font-medium">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Inward Medicine Stock</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-rose-700 font-medium">
+                      <Lock className="w-3.5 h-3.5 text-rose-500" />
+                      <span>Edit Medicines (Admin Only)</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-rose-700 font-medium">
+                      <Lock className="w-3.5 h-3.5 text-rose-500" />
+                      <span>Manage Users (Admin Only)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Security Alert: Elevation Restriction */}
+              <div className="p-3.5 rounded-2xl bg-amber-50/90 border border-amber-300 text-amber-950 text-xs flex items-start gap-2.5">
+                <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div className="leading-relaxed">
+                  <strong className="block font-bold text-amber-950">
+                    Administrator Elevation Restricted
+                  </strong>
+                  You are signed in under a dispensary role. Pharmacists cannot switch to Super Admin without proper credentials. To access administrative controls, please click <strong>Sign Out</strong> and authenticate with the Super Admin username and password.
+                </div>
+              </div>
             </div>
-          </div>
+          ) : (
+            /* SUPER ADMIN VIEW: Full authority to inspect and quick switch for testing */
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <label className="text-xs uppercase font-extrabold text-slate-500 tracking-wider font-mono flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  Admin Profile Switcher & Test Accounts
+                </label>
+                <span className="text-[11px] text-teal-700 font-bold">Admin Authority</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {users.map((u) => {
+                  const role = ROLES[u.role] || ROLES.pharmacist
+                  const Icon = roleIcons[u.role] || User
+                  const isActive = currentUser?.id === u.id
+
+                  return (
+                    <div
+                      key={u.id}
+                      onClick={() => quickSwitchUser(u.id)}
+                      className={`p-3.5 rounded-2xl border transition-all cursor-pointer relative text-left ${
+                        isActive
+                          ? 'border-teal-600 bg-teal-50/60 shadow-xs ring-2 ring-teal-500/20'
+                          : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/80 bg-white'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-white bg-gradient-to-br ${role.gradient} shadow-2xs`}>
+                            <Icon className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <h4 className="text-xs font-black text-slate-900 leading-tight flex items-center gap-1.5">
+                              {u.name}
+                              {isActive && (
+                                <CheckCircle2 className="w-3.5 h-3.5 text-teal-600" />
+                              )}
+                            </h4>
+                            <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full border mt-0.5 ${role.tagBg}`}>
+                              {role.shortLabel}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed mb-2.5">
+                        {role.description}
+                      </p>
+
+                      <div className="flex items-center justify-between text-[10px] font-mono pt-2 border-t border-slate-100 text-slate-500">
+                        <span>User: <strong className="text-slate-800">{u.username}</strong></span>
+                        <span>Pass: <strong className="text-slate-800">{u.password}</strong></span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Manual Username/Password Login Form Toggle */}
           <div className="pt-2 border-t border-slate-100">

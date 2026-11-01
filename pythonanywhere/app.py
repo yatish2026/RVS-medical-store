@@ -146,22 +146,23 @@ def init_db():
         );
     """)
 
-    # Seed default initial Super Admin account if not present (No public registration)
+    # Seed default initial staff accounts if not present
     cursor.execute("SELECT COUNT(*) as count FROM users")
     if cursor.fetchone()["count"] == 0:
         cursor.executemany("""
             INSERT INTO users (id, username, password_hash, name, role, designation, phone)
             VALUES (?, ?, ?, ?, ?, ?, ?)
         """, [
-            ("user-admin", "admin", "admin123", "Dr. Yatish", "admin_supervisor", "Medical Director & Super Admin", "+91 98765 43210")
+            ("user-admin", "admin", "admin123", "Dr. Yatish", "admin_supervisor", "Medical Director & Super Admin", "+91 98765 43210"),
+            ("user-dr-yatish", "dr-yatish", "Yatish", "yatish", "pharmacist", "Dispensary Pharmacist", "+91 98765 00000")
         ])
 
-    # Seed initial discount policy if not present
+    # Seed initial discount policy if not present (0% default)
     cursor.execute("SELECT COUNT(*) as count FROM clinical_discount_policy")
     if cursor.fetchone()["count"] == 0:
         cursor.execute("""
             INSERT INTO clinical_discount_policy (id, discount_percent, authorized_by, reason)
-            VALUES (1, 15.0, 'Dr. A. Sharma (MO)', 'Standard OPD Medicine Pack Discount')
+            VALUES (1, 0.0, 'None', 'Standard Bill Rate (No Discount Set)')
         """)
 
     conn.commit()
@@ -554,9 +555,9 @@ def handle_discount_policy():
     cursor = conn.cursor()
     if request.method == "POST":
         data = request.json or {}
-        pct = float(data.get("discount_percent", 15.0))
-        auth_by = data.get("authorized_by", "Dr. A. Sharma (MO)")
-        reason = data.get("reason", "OPD Pack Discount")
+        pct = float(data.get("discount_percent", 0.0))
+        auth_by = data.get("authorized_by", "None")
+        reason = data.get("reason", "Standard Bill Rate (No Discount Set)")
         cursor.execute("""
             INSERT OR REPLACE INTO clinical_discount_policy (id, discount_percent, authorized_by, reason)
             VALUES (1, ?, ?, ?)
@@ -573,9 +574,9 @@ def handle_discount_policy():
         return jsonify(dict(row))
 
     return jsonify({
-        "discount_percent": 15.0,
-        "authorized_by": "Dr. A. Sharma (MO)",
-        "reason": "Standard Hospital OPD Medicine Pack"
+        "discount_percent": 0.0,
+        "authorized_by": "None",
+        "reason": "Standard Bill Rate (No Discount Set)"
     })
 
 # --- 9. 1-CLICK BULK SEED TO SQLITE ---

@@ -19,6 +19,8 @@ export const Sidebar = ({ isOpen, onClose }) => {
     expiredCount,
     criticalExpiryCount,
     cart,
+    patients,
+    sales,
     currentUser,
     currentRole,
     canManageUsers,
@@ -66,7 +68,8 @@ export const Sidebar = ({ isOpen, onClose }) => {
       id: 'patients',
       label: 'Patients & Records',
       icon: Users,
-      badge: null,
+      badge: sales.length > 0 ? `${sales.length} Bills` : (patients.length > 0 ? `${patients.length}` : null),
+      badgeColor: 'bg-sky-50 text-sky-800 border-sky-200 font-bold',
       color: 'text-sky-600'
     }
   ]

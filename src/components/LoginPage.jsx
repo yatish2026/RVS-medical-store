@@ -35,40 +35,64 @@ export const LoginPage = ({ onLoginSuccess, backendConnected }) => {
       return
     }
 
-    // 1. Instant check against local registry for zero latency
-    const localUsers = JSON.parse(localStorage.getItem('rvs_users') || 'null') || INITIAL_USERS
-    const localFound = localUsers.find(
-      (u) => u.username.toLowerCase() === cleanUser && u.password === cleanPass
-    )
+    setLoading(true)
 
-    if (localFound) {
-      onLoginSuccess(localFound)
-      return
-    }
-
-    // 2. If not matched locally and backend is connected, query Flask backend
-    if (backendConnected) {
-      setLoading(true)
-      try {
-        const res = await apiLogin(cleanUser, cleanPass)
-        if (res && res.success && res.user) {
-          setLoading(false)
-          onLoginSuccess(res.user)
-          return
-        }
-      } catch (apiErr) {
-        console.warn('Backend login check failed', apiErr)
-      } finally {
+    // 1. Try server-side authentication (shared across all browsers & devices!)
+    try {
+      const res = await apiLogin(cleanUser, cleanPass)
+      if (res && res.success && res.user) {
         setLoading(false)
+        onLoginSuccess(res.user)
+        return
+      }
+    } catch (apiErr) {
+      // If server returned a specific error message (e.g. ACCOUNT_NOT_FOUND or INCORRECT_PASSWORD)
+      if (apiErr.message && !apiErr.message.includes('fetch') && !apiErr.message.includes('network') && !apiErr.message.includes('Failed')) {
+        setErrorMsg(apiErr.message)
+        setLoading(false)
+        return
       }
     }
 
-    setErrorMsg('Invalid username or password. Please verify your credentials or sign in as Super Admin.')
+    // 2. Fallback check against merged registry (INITIAL_USERS + locally created accounts)
+    const userMap = new Map()
+    INITIAL_USERS.forEach(u => userMap.set(u.username.toLowerCase(), u))
+    try {
+      const savedUsers = JSON.parse(localStorage.getItem('rvs_users') || '[]')
+      if (Array.isArray(savedUsers)) {
+        savedUsers.forEach(u => {
+          if (u && u.username) userMap.set(u.username.toLowerCase(), u)
+        })
+      }
+    } catch (e) {}
+
+    const userExists = userMap.get(cleanUser)
+
+    if (!userExists) {
+      setErrorMsg(`Account not found for username "${username.trim()}". This staff account has not been created yet. Please ask the Super Admin to add your account in User Management.`)
+      setLoading(false)
+      return
+    }
+
+    if (userExists.password !== cleanPass) {
+      setErrorMsg(`Incorrect password for username "${username.trim()}". Please check your password and try again.`)
+      setLoading(false)
+      return
+    }
+
+    onLoginSuccess(userExists)
+    setLoading(false)
   }
 
   const fillAdminCredentials = () => {
     setUsername('admin')
     setPassword('admin123')
+    setErrorMsg('')
+  }
+
+  const fillPharmacistCredentials = () => {
+    setUsername('dr-yatish')
+    setPassword('Yatish')
     setErrorMsg('')
   }
 
@@ -199,15 +223,21 @@ export const LoginPage = ({ onLoginSuccess, backendConnected }) => {
             </button>
           </form>
 
-          {/* Super Admin Initial Credentials Box */}
-          <div className="mt-6 pt-5 border-t border-slate-100">
-            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          {/* Initial Staff Credentials Box */}
+          <div className="mt-6 pt-5 border-t border-slate-100 space-y-2.5">
+            <span className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider font-mono flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-teal-600" />
+              Pre-Configured Staff Accounts
+            </span>
+
+            {/* Super Admin */}
+            <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
               <div>
-                <span className="text-[11px] font-extrabold text-slate-700 uppercase tracking-wider font-mono flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-teal-600" />
-                  Initial Super Admin Account
+                <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+                  Super Admin (Dr. Yatish)
                 </span>
-                <p className="text-xs text-slate-500 font-mono mt-0.5">
+                <p className="text-[11px] text-slate-500 font-mono mt-0.5">
                   User: <strong className="text-slate-800">admin</strong> • Pass: <strong className="text-slate-800">admin123</strong>
                 </p>
               </div>
@@ -215,9 +245,30 @@ export const LoginPage = ({ onLoginSuccess, backendConnected }) => {
               <button
                 type="button"
                 onClick={fillAdminCredentials}
-                className="px-3 py-1.5 rounded-xl bg-white hover:bg-teal-50 text-teal-800 border border-teal-200 text-xs font-bold transition-all cursor-pointer shadow-2xs shrink-0 self-start sm:self-auto"
+                className="px-3 py-1 rounded-xl bg-white hover:bg-purple-50 text-purple-800 border border-purple-200 text-xs font-bold transition-all cursor-pointer shadow-2xs shrink-0 self-start sm:self-auto"
               >
                 Autofill Admin
+              </button>
+            </div>
+
+            {/* Dispensary Pharmacist */}
+            <div className="p-3 rounded-2xl bg-teal-50/50 border border-teal-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+              <div>
+                <span className="text-xs font-bold text-teal-950 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-teal-500"></span>
+                  Pharmacist (yatish)
+                </span>
+                <p className="text-[11px] text-teal-700 font-mono mt-0.5">
+                  User: <strong className="text-teal-900">dr-yatish</strong> • Pass: <strong className="text-teal-900">Yatish</strong>
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={fillPharmacistCredentials}
+                className="px-3 py-1 rounded-xl bg-white hover:bg-teal-100 text-teal-800 border border-teal-300 text-xs font-bold transition-all cursor-pointer shadow-2xs shrink-0 self-start sm:self-auto"
+              >
+                Autofill Pharmacist
               </button>
             </div>
           </div>

@@ -49,10 +49,16 @@ export const apiLogin = async (username, password) => {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password }),
-    signal: AbortSignal.timeout ? AbortSignal.timeout(1500) : undefined
+    signal: AbortSignal.timeout ? AbortSignal.timeout(3000) : undefined
   })
-  if (!res.ok) throw new Error('Invalid username or password')
-  return await res.json()
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) {
+    const errorMsg = data.message || data.error || 'Invalid username or password'
+    const err = new Error(errorMsg)
+    err.code = data.error
+    throw err
+  }
+  return data
 }
 
 // 1. MEDICINES

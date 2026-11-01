@@ -41,8 +41,8 @@ export const UserManagementModal = () => {
     phone: ''
   })
 
-  const [discountVal, setDiscountVal] = useState(preApprovedDiscount?.percent || 10)
-  const [discountReason, setDiscountReason] = useState(preApprovedDiscount?.reason || 'OPD Patient Pack Discount')
+  const [discountVal, setDiscountVal] = useState(preApprovedDiscount?.percent ?? 0)
+  const [discountReason, setDiscountReason] = useState(preApprovedDiscount?.reason || 'Standard Bill Rate (No Discount Set)')
   const [errorMsg, setErrorMsg] = useState('')
 
   if (!isUserManagementModalOpen) return null

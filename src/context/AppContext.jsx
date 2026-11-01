@@ -35,8 +35,8 @@ import {
   apiSeedAllData
 } from '../lib/api'
 
-// One-time cleanup migration: purge legacy dummy demo records so testing begins with a 100% clean slate
-const REAL_TESTING_CLEANUP_KEY = 'rvs_clean_data_real_testing_v3'
+// One-time cleanup migration: purge legacy dummy demo records and old discounts so testing begins 100% fresh
+const REAL_TESTING_CLEANUP_KEY = 'rvs_clean_fresh_v6'
 if (typeof window !== 'undefined' && localStorage.getItem(REAL_TESTING_CLEANUP_KEY) !== 'done') {
   localStorage.removeItem('rvs_medicines')
   localStorage.removeItem('rvs_batches')
@@ -44,6 +44,8 @@ if (typeof window !== 'undefined' && localStorage.getItem(REAL_TESTING_CLEANUP_K
   localStorage.removeItem('rvs_suppliers')
   localStorage.removeItem('rvs_requisitions')
   localStorage.removeItem('rvs_sales')
+  localStorage.removeItem('rvs_preapproved_discount')
+  localStorage.removeItem('rvs_discount_percent')
   localStorage.removeItem('rvs_users')
   localStorage.removeItem('rvs_current_user')
   localStorage.setItem(REAL_TESTING_CLEANUP_KEY, 'done')
@@ -58,10 +60,22 @@ export const AppProvider = ({ children }) => {
   // Theme State
   const [darkMode, setDarkMode] = useState(false)
 
-  // User Authentication & Roles State
+  // User Authentication & Roles State - Always preserves INITIAL_USERS (admin & dr-yatish)
   const [users, setUsers] = useState(() => {
     const saved = localStorage.getItem('rvs_users')
-    return saved ? JSON.parse(saved) : INITIAL_USERS
+    const userMap = new Map()
+    INITIAL_USERS.forEach(u => userMap.set(u.username.toLowerCase(), u))
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed)) {
+          parsed.forEach(u => {
+            if (u && u.username) userMap.set(u.username.toLowerCase(), u)
+          })
+        }
+      } catch (e) {}
+    }
+    return Array.from(userMap.values())
   })
 
   const [currentUser, setCurrentUser] = useState(() => {
@@ -76,13 +90,21 @@ export const AppProvider = ({ children }) => {
     return null // Default to null so user sees clean LoginPage first
   })
 
-  // Pre-approved Clinical Pack Discount (Set by MO or Admin, reflects on Pharmacist terminal)
+  // Pre-approved Clinical Pack Discount (Default: 0% / None - only set when explicitly authorized by MO/Admin)
   const [preApprovedDiscount, setPreApprovedDiscount] = useState(() => {
     const saved = localStorage.getItem('rvs_preapproved_discount')
-    return saved ? JSON.parse(saved) : {
-      percent: 10,
-      appliedBy: 'Dr. A. Sharma (MO)',
-      reason: 'General OPD Pack Discount'
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved)
+        if (parsed && typeof parsed.percent === 'number') {
+          return parsed
+        }
+      } catch (e) {}
+    }
+    return {
+      percent: 0,
+      appliedBy: 'None',
+      reason: 'Standard Bill Rate (No Discount Set)'
     }
   })
 
@@ -277,10 +299,10 @@ export const AppProvider = ({ children }) => {
       phone: userData.phone || ''
     }
     setUsers(prev => [...prev, newUser])
-    if (backendConnected) {
-      try {
-        await apiCreateUser(newUser)
-      } catch (e) {}
+    try {
+      await apiCreateUser(newUser)
+    } catch (e) {
+      console.warn('Backend user create note:', e)
     }
     notify('User Created', `Account for ${newUser.name} (${ROLES[newUser.role]?.shortLabel}) was added.`, 'success')
     return true
@@ -297,10 +319,10 @@ export const AppProvider = ({ children }) => {
     }
     const target = users.find(u => u.id === userId)
     setUsers(prev => prev.filter(u => u.id !== userId))
-    if (backendConnected) {
-      try {
-        await apiDeleteUser(userId)
-      } catch (e) {}
+    try {
+      await apiDeleteUser(userId)
+    } catch (e) {
+      console.warn('Backend user delete note:', e)
     }
     notify('User Removed', `Account for ${target?.name || 'User'} has been removed.`, 'info')
     return true
@@ -314,21 +336,25 @@ export const AppProvider = ({ children }) => {
     const num = Math.max(0, Math.min(100, Number(percent) || 0))
     const updated = {
       percent: num,
-      appliedBy: `${currentUser.name} (${ROLES[currentUser.role]?.shortLabel})`,
-      reason: reason || 'Clinical Pack Discount'
+      appliedBy: num > 0 ? `${currentUser.name} (${ROLES[currentUser.role]?.shortLabel})` : 'None',
+      reason: num > 0 ? (reason || 'Clinical Pack Discount') : 'Standard Bill Rate (No Discount Set)'
     }
     setPreApprovedDiscount(updated)
     setDiscountPercent(num)
-    if (backendConnected) {
-      try {
-        await apiUpdateDiscountPolicy({
-          discount_percent: num,
-          authorized_by: updated.appliedBy,
-          reason: updated.reason
-        })
-      } catch (e) {}
+    try {
+      await apiUpdateDiscountPolicy({
+        discount_percent: num,
+        authorized_by: updated.appliedBy,
+        reason: updated.reason
+      })
+    } catch (e) {
+      console.warn('Backend discount update note:', e)
     }
-    notify('Discount Authorized', `${num}% discount applied & locked for dispensary pharmacists by ${currentUser.name}.`, 'success')
+    if (num > 0) {
+      notify('Discount Authorized', `${num}% discount applied & locked for dispensary pharmacists by ${currentUser.name}.`, 'success')
+    } else {
+      notify('Discount Reset', 'Clinical discount reset to 0% (Standard Bill Rate).', 'info')
+    }
     return true
   }
 
@@ -338,16 +364,16 @@ export const AppProvider = ({ children }) => {
       const res = await checkBackendHealth()
       setBackendConnected(res.connected)
       if (res.connected) {
-        setSyncMessage('Connected to PythonAnywhere Flask API & MySQL')
+        setSyncMessage('Connected to Shared Hospital Database')
         await fetchFromBackend()
       } else {
-        setSyncMessage('Local Mode (PythonAnywhere API Standby)')
+        setSyncMessage('Local Mode')
       }
     }
     initBackend()
   }, [])
 
-  // Fetch all tables from PythonAnywhere Flask API
+  // Fetch all tables from PythonAnywhere Flask API / Local DB
   const fetchFromBackend = async () => {
     try {
       const [cloudMeds, cloudBatches, cloudPatients, cloudSuppliers, cloudSales, cloudReqs, discountData, cloudUsers] = await Promise.allSettled([
@@ -380,18 +406,25 @@ export const AppProvider = ({ children }) => {
         setRequisitions(cloudReqs.value)
       }
       if (discountData.status === 'fulfilled' && discountData.value?.discount_percent !== undefined) {
+        const disc = Number(discountData.value.discount_percent) || 0
         setPreApprovedDiscount({
-          percent: Number(discountData.value.discount_percent),
-          appliedBy: discountData.value.authorized_by || 'Dr. A. Sharma (MO)',
-          reason: discountData.value.reason || 'General OPD Pack Discount'
+          percent: disc,
+          appliedBy: disc > 0 ? (discountData.value.authorized_by || 'Medical Officer (MO)') : 'None',
+          reason: disc > 0 ? (discountData.value.reason || 'Clinical Package Discount') : 'Standard Bill Rate (No Discount Set)'
         })
+        setDiscountPercent(disc)
       }
       if (cloudUsers.status === 'fulfilled' && Array.isArray(cloudUsers.value) && cloudUsers.value.length > 0) {
-        setUsers(cloudUsers.value)
+        const userMap = new Map()
+        INITIAL_USERS.forEach(u => userMap.set(u.username.toLowerCase(), u))
+        cloudUsers.value.forEach(u => {
+          if (u && u.username) userMap.set(u.username.toLowerCase(), u)
+        })
+        setUsers(Array.from(userMap.values()))
       }
       return true
     } catch (e) {
-      console.warn('PythonAnywhere API fetch error:', e)
+      console.warn('Backend API fetch error:', e)
       return false
     }
   }
@@ -833,19 +866,68 @@ export const AppProvider = ({ children }) => {
     // 2. Add to sales history
     setSales(prev => [newSale, ...prev])
 
+    // 2.5 Automatically record or update Patient in Patients & Records directory
+    const patientName = (cartCustomer.name || '').trim() || 'Walk-in Patient'
+    const patientPhone = (cartCustomer.phone || '').trim()
+    const patientDoctor = (cartCustomer.doctor || '').trim() || 'Dr. On-Duty Medical Officer'
+    const prescribedMeds = saleItems.map(i => `${i.medicine_name} (${i.quantity})`).join(', ')
+
+    setPatients(prev => {
+      // Check if patient already exists by UHID or phone or exact name
+      const existingIndex = prev.findIndex(p =>
+        (cartCustomer.uhid && p.uhid === cartCustomer.uhid) ||
+        (patientPhone && patientPhone !== 'N/A' && p.phone === patientPhone) ||
+        (patientName !== 'Walk-in Patient' && p.name.toLowerCase() === patientName.toLowerCase())
+      )
+
+      if (existingIndex >= 0) {
+        const updated = [...prev]
+        const existing = updated[existingIndex]
+        updated[existingIndex] = {
+          ...existing,
+          phone: patientPhone && patientPhone !== 'N/A' ? patientPhone : existing.phone,
+          doctor_name: patientDoctor || existing.doctor_name,
+          total_spent: Number(((existing.total_spent || 0) + newSale.grand_total).toFixed(2)),
+          visit_count: (existing.visit_count || 1) + 1,
+          last_visit: new Date().toISOString(),
+          last_invoice: newSale.invoice_number,
+          recent_medicines: prescribedMeds
+        }
+        return updated
+      } else {
+        const newPatient = {
+          id: generateUUID(),
+          uhid: cartCustomer.uhid || `UHID-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+          name: patientName,
+          phone: patientPhone && patientPhone !== 'N/A' ? patientPhone : '',
+          gender: 'General',
+          age: 'N/A',
+          doctor_name: patientDoctor,
+          total_spent: Number(newSale.grand_total.toFixed(2)),
+          visit_count: 1,
+          last_visit: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          last_invoice: newSale.invoice_number,
+          recent_medicines: prescribedMeds,
+          allergies: 'None',
+          diagnosis: 'Hospital Pharmacy Prescription'
+        }
+        try {
+          apiCreatePatient(newPatient)
+        } catch (e) {}
+        return [newPatient, ...prev]
+      }
+    })
+
     // 3. Clear cart & open invoice receipt
     setCart([])
     setActiveInvoice(newSale)
 
-    // 4. Cloud Write to PythonAnywhere Flask API & MySQL
-    if (backendConnected) {
-      try {
-        await apiCreateSale(newSale)
-        notify('Invoice Generated!', `Invoice #${newSale.invoice_number} saved to PythonAnywhere MySQL for ₹${newSale.grand_total.toFixed(2)}.`, 'success')
-      } catch (e) {
-        notify('Invoice Generated (Local)', `Invoice #${newSale.invoice_number} saved locally for ₹${newSale.grand_total.toFixed(2)}.`, 'info')
-      }
-    } else {
+    // 4. Write to shared hospital database
+    try {
+      await apiCreateSale(newSale)
+      notify('Invoice Generated!', `Invoice #${newSale.invoice_number} saved for ₹${newSale.grand_total.toFixed(2)}.`, 'success')
+    } catch (e) {
       notify('Invoice Generated (Local)', `Invoice #${newSale.invoice_number} saved locally for ₹${newSale.grand_total.toFixed(2)}.`, 'info')
     }
 

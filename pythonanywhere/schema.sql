@@ -128,18 +128,19 @@ CREATE TABLE IF NOT EXISTS sale_items (
 -- 9. PRE-APPROVED CLINICAL DISCOUNT SETTINGS TABLE
 CREATE TABLE IF NOT EXISTS clinical_discount_policy (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    discount_percent DECIMAL(5,2) DEFAULT 10.00,
-    authorized_by VARCHAR(255) DEFAULT 'Dr. A. Sharma (MO)',
-    reason VARCHAR(255) DEFAULT 'General OPD Pack Discount',
+    discount_percent DECIMAL(5,2) DEFAULT 0.00,
+    authorized_by VARCHAR(255) DEFAULT 'None',
+    reason VARCHAR(255) DEFAULT 'Standard Bill Rate (No Discount Set)',
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- INITIAL SEED: Pre-approved discount policy
+-- INITIAL SEED: Pre-approved discount policy (0% default)
 INSERT INTO clinical_discount_policy (discount_percent, authorized_by, reason)
-VALUES (10.00, 'Dr. A. Sharma (MO)', 'General OPD Pack Discount')
-ON DUPLICATE KEY UPDATE discount_percent=10.00;
+VALUES (0.00, 'None', 'Standard Bill Rate (No Discount Set)')
+ON DUPLICATE KEY UPDATE discount_percent=0.00;
 
--- INITIAL SEED: Initial Super Admin Account (No Public Registration)
+-- INITIAL SEED: Initial Accounts (Super Admin and Pharmacist)
 INSERT INTO users (id, username, password_hash, name, role, designation, phone) VALUES
-('user-admin', 'admin', 'admin123', 'Dr. Yatish', 'admin_supervisor', 'Chief Medical Administrator & Super Admin', '+91 98765 43210')
+('user-admin', 'admin', 'admin123', 'Dr. Yatish', 'admin_supervisor', 'Chief Medical Administrator & Super Admin', '+91 98765 43210'),
+('user-dr-yatish', 'dr-yatish', 'Yatish', 'yatish', 'pharmacist', 'Dispensary Pharmacist', '+91 98765 00000')
 ON DUPLICATE KEY UPDATE name=VALUES(name);

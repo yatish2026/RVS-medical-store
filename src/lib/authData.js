@@ -58,7 +58,7 @@ export const ROLES = {
     shortLabel: 'Pharmacist',
     description: 'Dispensary operations. Can add medicine stock, perform patient billing, and print invoices. Strictly restricted from adding or modifying discounts (discounts must be pre-authorized by MO or Admin).',
     badge: 'Dispensary & Stock Inward',
-    canEdit: true,
+    canEdit: false, // Strictly restricted from editing medicines or pricing (Connect with Admin to edit)
     canAddMedicine: true,
     canDeleteMedicine: false,
     canManageUsers: false,
@@ -80,5 +80,14 @@ export const INITIAL_USERS = [
     role: 'admin_supervisor',
     designation: 'Chief Medical Administrator & Super Admin',
     phone: '+91 98765 43210'
+  },
+  {
+    id: 'user-dr-yatish',
+    username: 'dr-yatish',
+    password: 'Yatish',
+    name: 'yatish',
+    role: 'pharmacist',
+    designation: 'Dispensary Pharmacist',
+    phone: '+91 98765 00000'
   }
 ]

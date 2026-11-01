@@ -536,12 +536,22 @@ export const POSBilling = () => {
                             <Lock className="w-3.5 h-3.5 text-slate-500" />
                             Pre-Authorized Clinical Discount
                           </span>
-                          <span className="px-2.5 py-0.5 rounded-lg font-mono font-black bg-teal-100 text-teal-900 text-xs border border-teal-300">
+                          <span className={`px-2.5 py-0.5 rounded-lg font-mono font-black text-xs border ${
+                            discountPercent > 0 
+                              ? 'bg-teal-100 text-teal-900 border-teal-300' 
+                              : 'bg-slate-200 text-slate-700 border-slate-300'
+                          }`}>
                             {discountPercent}%
                           </span>
                         </div>
                         <div className="text-[10px] text-slate-500 mt-1 flex items-center justify-between">
-                          <span>Authorized by: <strong className="text-slate-700">{preApprovedDiscount?.appliedBy || 'Medical Officer (MO)'}</strong></span>
+                          <span>
+                            {discountPercent > 0 ? (
+                              <>Authorized by: <strong className="text-slate-700">{preApprovedDiscount?.appliedBy || 'Medical Officer (MO)'}</strong></>
+                            ) : (
+                              <span className="text-slate-600 font-medium">Standard Bill Rate (No Discount Set)</span>
+                            )}
+                          </span>
                           <span className="text-amber-700 font-bold font-mono">🔒 Locked (Dispensary)</span>
                         </div>
                       </div>
