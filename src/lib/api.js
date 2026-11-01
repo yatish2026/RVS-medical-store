@@ -32,6 +32,9 @@ export const checkBackendHealth = async () => {
     })
     if (res.ok) {
       const data = await res.json()
+      if (data.offline || data.connected === false || data.status === 'offline') {
+        return { connected: false, data }
+      }
       return { connected: true, data }
     }
     return { connected: false, error: `HTTP ${res.status}` }

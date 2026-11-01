@@ -139,10 +139,7 @@ INSERT INTO clinical_discount_policy (discount_percent, authorized_by, reason)
 VALUES (10.00, 'Dr. A. Sharma (MO)', 'General OPD Pack Discount')
 ON DUPLICATE KEY UPDATE discount_percent=10.00;
 
--- INITIAL SEED: Default Demo Users
+-- INITIAL SEED: Initial Super Admin Account (No Public Registration)
 INSERT INTO users (id, username, password_hash, name, role, designation, phone) VALUES
-('user-admin', 'admin', 'admin123', 'Dr. Yatish', 'admin_supervisor', 'Chief Medical Administrator & Supervisor', '+91 98765 43210'),
-('user-doctor', 'doctor_mo', 'doc123', 'Dr. A. Sharma (MD)', 'doctor_mo', 'Duty Medical Officer (MO) - General Medicine', '+91 98765 43211'),
-('user-supervisor', 'supervisor', 'viewer123', 'R. Verma', 'supervisor_viewer', 'Hospital Operations Supervisor & Auditor', '+91 98765 43212'),
-('user-pharmacist', 'pharmacist', 'pharma123', 'S. Kumar', 'pharmacist', 'Head Dispensary Pharmacist', '+91 98765 43213')
+('user-admin', 'admin', 'admin123', 'Dr. Yatish', 'admin_supervisor', 'Chief Medical Administrator & Super Admin', '+91 98765 43210')
 ON DUPLICATE KEY UPDATE name=VALUES(name);

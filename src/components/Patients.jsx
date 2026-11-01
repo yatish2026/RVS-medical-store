@@ -65,11 +65,20 @@ export const Patients = ({ onOpenPatientModal }) => {
 
       {/* Grid of Patients */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {filteredPatients.map((pat) => {
-          const patientSales = sales.filter(s => s.patient_id === pat.id || s.customer_name === pat.name)
-          const totalSpent = patientSales.reduce((acc, s) => acc + (s.grand_total || 0), 0)
+        {filteredPatients.length === 0 ? (
+          <div className="col-span-full clinical-card p-10 rounded-3xl text-center text-slate-500 border border-dashed border-slate-300">
+            <Users className="w-10 h-10 text-sky-600/40 mx-auto mb-2" />
+            <h4 className="font-extrabold text-slate-800 text-sm">No Patients Registered Yet</h4>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
+              No hospital patient records found. Click "+ Register New Patient" to add your first real patient.
+            </p>
+          </div>
+        ) : (
+          filteredPatients.map((pat) => {
+            const patientSales = sales.filter(s => s.patient_id === pat.id || s.customer_name === pat.name)
+            const totalSpent = patientSales.reduce((acc, s) => acc + (s.grand_total || 0), 0)
 
-          return (
+            return (
             <div
               key={pat.id}
               className="clinical-card p-5 rounded-2xl flex flex-col justify-between gap-4 group hover:border-sky-300"
@@ -143,7 +152,7 @@ export const Patients = ({ onOpenPatientModal }) => {
               </div>
             </div>
           )
-        })}
+        }))}
       </div>
 
     </div>

@@ -274,7 +274,16 @@ export const POSBilling = () => {
 
             {/* Medicines Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[calc(100vh-19rem)] overflow-y-auto pr-1">
-              {filteredMedicines.map((med) => {
+              {filteredMedicines.length === 0 ? (
+                <div className="col-span-full clinical-card p-10 rounded-3xl text-center text-slate-500 my-4 border border-dashed border-slate-300">
+                  <Pill className="w-10 h-10 text-teal-600/40 mx-auto mb-2" />
+                  <h4 className="font-extrabold text-slate-800 text-sm">Dispensary Stock is Empty</h4>
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
+                    No medicines in stock. Add your real medicines in Medicine Inventory or upload an invoice PDF to start billing.
+                  </p>
+                </div>
+              ) : (
+                filteredMedicines.map((med) => {
                 const medBatches = batches.filter(b => b.medicine_id === med.id && b.current_stock > 0)
                 const totalStock = medBatches.reduce((acc, b) => acc + b.current_stock, 0)
                 const bestBatch = medBatches[0]
@@ -337,7 +346,7 @@ export const POSBilling = () => {
                     )}
                   </div>
                 )
-              })}
+              }))}
             </div>
 
             {/* Mobile Floating Cart Summary Button */}

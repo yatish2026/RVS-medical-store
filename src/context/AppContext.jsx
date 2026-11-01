@@ -35,6 +35,20 @@ import {
   apiSeedAllData
 } from '../lib/api'
 
+// One-time cleanup migration: purge legacy dummy demo records so testing begins with a 100% clean slate
+const REAL_TESTING_CLEANUP_KEY = 'rvs_clean_data_real_testing_v3'
+if (typeof window !== 'undefined' && localStorage.getItem(REAL_TESTING_CLEANUP_KEY) !== 'done') {
+  localStorage.removeItem('rvs_medicines')
+  localStorage.removeItem('rvs_batches')
+  localStorage.removeItem('rvs_patients')
+  localStorage.removeItem('rvs_suppliers')
+  localStorage.removeItem('rvs_requisitions')
+  localStorage.removeItem('rvs_sales')
+  localStorage.removeItem('rvs_users')
+  localStorage.removeItem('rvs_current_user')
+  localStorage.setItem(REAL_TESTING_CLEANUP_KEY, 'done')
+}
+
 const AppContext = createContext()
 
 export const AppProvider = ({ children }) => {
@@ -875,7 +889,27 @@ export const AppProvider = ({ children }) => {
   const canDeleteMedicine = Boolean(currentRole.canDeleteMedicine)
   const canManageUsers = Boolean(currentRole.canManageUsers)
   const canApplyDiscount = Boolean(currentRole.canApplyDiscount)
-  const canBill = Boolean(currentRole.canBill)
+  // Super Admin: Reset all clinical data to empty clean slate
+  const clearAllData = () => {
+    if (currentUser?.role !== 'admin_supervisor') {
+      notify('Access Denied', 'Only Super Admin can reset clinical data.', 'error')
+      return
+    }
+    setMedicines([])
+    setBatches([])
+    setPatients([])
+    setSuppliers([])
+    setRequisitions([])
+    setSales([])
+    setCart([])
+    localStorage.removeItem('rvs_medicines')
+    localStorage.removeItem('rvs_batches')
+    localStorage.removeItem('rvs_patients')
+    localStorage.removeItem('rvs_suppliers')
+    localStorage.removeItem('rvs_requisitions')
+    localStorage.removeItem('rvs_sales')
+    notify('Clean Slate Active', 'All inventory, sales, and clinical records have been cleared for real testing.', 'info')
+  }
 
   return (
     <AppContext.Provider
@@ -918,6 +952,7 @@ export const AppProvider = ({ children }) => {
         addSupplier,
         addRequisition,
         updateRequisitionStatus,
+        clearAllData,
         addToCart,
         updateCartQty,
         removeFromCart,

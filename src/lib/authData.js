@@ -78,34 +78,7 @@ export const INITIAL_USERS = [
     password: 'admin123',
     name: 'Dr. Yatish',
     role: 'admin_supervisor',
-    designation: 'Chief Medical Administrator & Supervisor',
+    designation: 'Chief Medical Administrator & Super Admin',
     phone: '+91 98765 43210'
-  },
-  {
-    id: 'user-doctor',
-    username: 'doctor_mo',
-    password: 'doc123',
-    name: 'Dr. A. Sharma (MD)',
-    role: 'doctor_mo',
-    designation: 'Duty Medical Officer (MO) - General Medicine',
-    phone: '+91 98765 43211'
-  },
-  {
-    id: 'user-supervisor',
-    username: 'supervisor',
-    password: 'viewer123',
-    name: 'R. Verma',
-    role: 'supervisor_viewer',
-    designation: 'Hospital Operations Supervisor & Auditor',
-    phone: '+91 98765 43212'
-  },
-  {
-    id: 'user-pharmacist',
-    username: 'pharmacist',
-    password: 'pharma123',
-    name: 'S. Kumar',
-    role: 'pharmacist',
-    designation: 'Head Dispensary Pharmacist',
-    phone: '+91 98765 43213'
   }
 ]

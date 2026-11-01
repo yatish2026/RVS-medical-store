@@ -146,17 +146,14 @@ def init_db():
         );
     """)
 
-    # Seed default staff accounts if not present
+    # Seed default initial Super Admin account if not present (No public registration)
     cursor.execute("SELECT COUNT(*) as count FROM users")
     if cursor.fetchone()["count"] == 0:
         cursor.executemany("""
             INSERT INTO users (id, username, password_hash, name, role, designation, phone)
             VALUES (?, ?, ?, ?, ?, ?, ?)
         """, [
-            ("user-admin", "admin", "admin123", "Dr. Yatish", "admin_supervisor", "Medical Director & Super Admin", "+91 98765 43210"),
-            ("user-doctor", "doctor_mo", "doc123", "Dr. A. Sharma (MD)", "doctor_mo", "Senior Medical Officer (MO)", "+91 98765 43211"),
-            ("user-supervisor", "supervisor", "viewer123", "R. Verma", "supervisor_viewer", "Hospital Auditor & Inventory Supervisor", "+91 98765 43212"),
-            ("user-pharma", "pharmacist", "pharma123", "S. Kumar", "pharmacist", "Chief Dispensary Pharmacist", "+91 98765 43213")
+            ("user-admin", "admin", "admin123", "Dr. Yatish", "admin_supervisor", "Medical Director & Super Admin", "+91 98765 43210")
         ])
 
     # Seed initial discount policy if not present
