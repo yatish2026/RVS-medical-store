@@ -2,6 +2,13 @@ import React, { useState } from 'react'
 import { useApp } from '../context/AppContext'
 import confetti from 'canvas-confetti'
 import {
+  getLocalDateKey,
+  getTodayDateKey,
+  getYesterdayDateKey,
+  formatDisplayDate,
+  formatDisplayTime
+} from '../lib/dateUtils'
+import {
   Search,
   ShoppingCart,
   Trash2,
@@ -149,19 +156,15 @@ export const POSBilling = ({ onOpenMedicineModal, onOpenPdfModal }) => {
   }
 
   // History filtering
-  const now = new Date()
-  const todayStr = now.toISOString().split('T')[0]
+  const todayStr = getTodayDateKey()
+  const yesterdayStr = getYesterdayDateKey()
 
-  const yesterday = new Date(now)
-  yesterday.setDate(yesterday.getDate() - 1)
-  const yesterdayStr = yesterday.toISOString().split('T')[0]
-
-  const sevenDaysAgo = new Date(now)
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+  const sevenDaysAgoDate = new Date()
+  sevenDaysAgoDate.setDate(sevenDaysAgoDate.getDate() - 7)
+  const sevenDaysAgoStr = getLocalDateKey(sevenDaysAgoDate)
 
   const filteredHistorySales = sales.filter(s => {
-    const saleDateStr = s.created_at ? s.created_at.split('T')[0] : todayStr
-    const saleDate = new Date(s.created_at || Date.now())
+    const saleDateStr = getLocalDateKey(s.created_at)
 
     let matchesDate = true
     if (historyDateFilter === 'TODAY') {
@@ -169,24 +172,24 @@ export const POSBilling = ({ onOpenMedicineModal, onOpenPdfModal }) => {
     } else if (historyDateFilter === 'YESTERDAY') {
       matchesDate = saleDateStr === yesterdayStr
     } else if (historyDateFilter === '7DAYS') {
-      matchesDate = saleDate >= sevenDaysAgo
+      matchesDate = saleDateStr >= sevenDaysAgoStr
     } else if (historyDateFilter === 'CUSTOM') {
       if (historyCustomStart && saleDateStr < historyCustomStart) matchesDate = false
       if (historyCustomEnd && saleDateStr > historyCustomEnd) matchesDate = false
     }
 
     const matchesSearch =
-      s.invoice_number.toLowerCase().includes(historySearch.toLowerCase()) ||
-      s.customer_name.toLowerCase().includes(historySearch.toLowerCase()) ||
+      s.invoice_number?.toLowerCase().includes(historySearch.toLowerCase()) ||
+      s.customer_name?.toLowerCase().includes(historySearch.toLowerCase()) ||
       (s.customer_phone && s.customer_phone.includes(historySearch)) ||
       (s.doctor_name && s.doctor_name.toLowerCase().includes(historySearch.toLowerCase()))
 
     return matchesDate && matchesSearch
   })
 
-  // Group history by Day
+  // Group history by Day (correct YYYY-MM-DD grouping)
   const historyByDay = filteredHistorySales.reduce((acc, sale) => {
-    const dateKey = sale.created_at ? sale.created_at.split('T')[0] : todayStr
+    const dateKey = getLocalDateKey(sale.created_at)
     if (!acc[dateKey]) {
       acc[dateKey] = {
         date: dateKey,
@@ -203,7 +206,7 @@ export const POSBilling = ({ onOpenMedicineModal, onOpenPdfModal }) => {
     return acc
   }, {})
 
-  const sortedHistoryDays = Object.keys(historyByDay).sort((a, b) => new Date(b) - new Date(a))
+  const sortedHistoryDays = Object.keys(historyByDay).sort((a, b) => b.localeCompare(a))
   const totalHistoryRev = filteredHistorySales.reduce((acc, s) => acc + (s.grand_total || 0), 0)
 
   return (
@@ -1035,9 +1038,10 @@ export const POSBilling = ({ onOpenMedicineModal, onOpenPdfModal }) => {
             ) : (
               sortedHistoryDays.map((dateKey) => {
                 const dayData = historyByDay[dateKey]
-                const dateObj = new Date(dateKey + 'T00:00:00')
                 const isToday = dateKey === todayStr
+                const isYesterday = dateKey === yesterdayStr
                 const isExpanded = historyExpandedDay === dateKey || sortedHistoryDays.length === 1
+                const displayDateStr = formatDisplayDate(dateKey)
 
                 return (
                   <div
@@ -1048,23 +1052,28 @@ export const POSBilling = ({ onOpenMedicineModal, onOpenPdfModal }) => {
                     <div
                       onClick={() => setHistoryExpandedDay(isExpanded ? null : dateKey)}
                       className={`p-3.5 sm:p-4 flex items-center justify-between gap-3 cursor-pointer select-none transition-colors ${
-                        isToday ? 'bg-teal-50/40 hover:bg-teal-50' : 'bg-slate-50 hover:bg-slate-100/70'
+                        isToday ? 'bg-teal-50/40 hover:bg-teal-50' : isYesterday ? 'bg-amber-50/30 hover:bg-amber-50/60' : 'bg-slate-50 hover:bg-slate-100/70'
                       }`}
                     >
                       <div className="flex items-center gap-3">
                         <div className={`p-2 rounded-xl border ${
-                          isToday ? 'bg-teal-600 text-white border-teal-700' : 'bg-white text-slate-700 border-slate-200'
+                          isToday ? 'bg-teal-600 text-white border-teal-700' : isYesterday ? 'bg-amber-600 text-white border-amber-700' : 'bg-white text-slate-700 border-slate-200'
                         }`}>
                           <Calendar className="w-4 h-4" />
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="font-extrabold text-sm text-slate-900">
-                              {dateObj.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+                              {displayDateStr}
                             </span>
                             {isToday && (
                               <span className="text-[10px] bg-emerald-100 text-emerald-800 font-black px-2 py-0.2 rounded-full font-mono">
                                 TODAY
+                              </span>
+                            )}
+                            {isYesterday && (
+                              <span className="text-[10px] bg-amber-100 text-amber-800 font-black px-2 py-0.2 rounded-full font-mono">
+                                YESTERDAY
                               </span>
                             )}
                           </div>
@@ -1108,7 +1117,7 @@ export const POSBilling = ({ onOpenMedicineModal, onOpenPdfModal }) => {
                                   {sale.payment_mode}
                                 </span>
                                 <span className="text-[11px] text-slate-400 font-mono">
-                                  {new Date(sale.created_at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  {formatDisplayTime(sale.created_at)}
                                 </span>
                               </div>
 

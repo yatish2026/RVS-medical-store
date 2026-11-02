@@ -98,6 +98,11 @@ export const AppProvider = ({ children }) => {
     return null // Default to null so user sees clean Super Admin LoginPage first
   })
 
+  // Track if current session is Super Admin impersonating/testing another role
+  const [isImpersonating, setIsImpersonating] = useState(() => {
+    return sessionStorage.getItem('rvs_admin_impersonating') === 'true'
+  })
+
   // Pre-approved Clinical Pack Discount (Default: 0% / None - only set when explicitly authorized by MO/Admin)
   const [preApprovedDiscount, setPreApprovedDiscount] = useState(() => {
     const saved = localStorage.getItem('rvs_preapproved_discount')
@@ -236,6 +241,17 @@ export const AppProvider = ({ children }) => {
     localStorage.setItem('rvs_preapproved_discount', JSON.stringify(preApprovedDiscount))
   }, [preApprovedDiscount])
 
+  // When current user changes, ensure active tab is allowed for their role
+  useEffect(() => {
+    if (currentUser) {
+      const roleInfo = ROLES[currentUser.role] || ROLES.pharmacist
+      const allowed = roleInfo.allowedTabs || ['pos']
+      if (!allowed.includes(activeTab)) {
+        setActiveTab(roleInfo.defaultTab || allowed[0] || 'pos')
+      }
+    }
+  }, [currentUser])
+
   // When current user is Pharmacist, auto-sync discount to pre-approved percentage
   useEffect(() => {
     if (currentUser?.role === 'pharmacist' && preApprovedDiscount?.percent !== undefined) {
@@ -260,24 +276,44 @@ export const AppProvider = ({ children }) => {
       return false
     }
 
+    sessionStorage.removeItem('rvs_admin_impersonating')
+    setIsImpersonating(false)
     localStorage.setItem('rvs_current_user', JSON.stringify(user))
     setCurrentUser(user)
     const roleInfo = ROLES[user.role] || ROLES.pharmacist
+    if (roleInfo.defaultTab) {
+      setActiveTab(roleInfo.defaultTab)
+    }
     notify(`Welcome back, ${user.name}`, `Logged in as ${roleInfo.shortLabel} (${roleInfo.badge})`, 'success')
     setIsAuthModalOpen(false)
     return true
   }
 
   const quickSwitchUser = (userIdOrRole) => {
+    // Security Guard: Only Super Admin (or active admin impersonator) can switch profiles
+    if (currentUser?.role !== 'admin_supervisor' && !isImpersonating) {
+      notify('Access Restricted', 'Only Super Administrator can switch roles or test accounts.', 'error')
+      return false
+    }
     const user = users.find(
       u => u.id === userIdOrRole ||
            u.role === userIdOrRole ||
            u.username?.toLowerCase() === String(userIdOrRole).toLowerCase()
     )
     if (user) {
+      if (user.role !== 'admin_supervisor') {
+        sessionStorage.setItem('rvs_admin_impersonating', 'true')
+        setIsImpersonating(true)
+      } else {
+        sessionStorage.removeItem('rvs_admin_impersonating')
+        setIsImpersonating(false)
+      }
       localStorage.setItem('rvs_current_user', JSON.stringify(user))
       setCurrentUser(user)
       const roleInfo = ROLES[user.role] || ROLES.pharmacist
+      if (roleInfo.defaultTab) {
+        setActiveTab(roleInfo.defaultTab)
+      }
       notify(`Role Switched: ${roleInfo.shortLabel}`, `Active profile: ${user.name}. Permissions updated.`, 'success')
       setIsAuthModalOpen(false)
       return true
@@ -285,9 +321,24 @@ export const AppProvider = ({ children }) => {
     return false
   }
 
+  const returnToSuperAdmin = () => {
+    sessionStorage.removeItem('rvs_admin_impersonating')
+    setIsImpersonating(false)
+    const adminUser = users.find(u => u.role === 'admin_supervisor' || u.username === 'admin') || INITIAL_USERS[0]
+    localStorage.setItem('rvs_current_user', JSON.stringify(adminUser))
+    setCurrentUser(adminUser)
+    setActiveTab('dashboard')
+    notify('Returned to Super Admin', 'Back to Super Administrator session (Dr. Yatish).', 'success')
+    setIsAuthModalOpen(false)
+    return true
+  }
+
   const logout = () => {
+    sessionStorage.removeItem('rvs_admin_impersonating')
+    setIsImpersonating(false)
     localStorage.removeItem('rvs_current_user')
     setCurrentUser(null)
+    setActiveTab('dashboard')
     notify('Logged Out', 'You have been securely signed out of RVS Dispensary.', 'info')
   }
 
@@ -1118,6 +1169,9 @@ export const AppProvider = ({ children }) => {
         users,
         currentUser,
         currentRole,
+        isSuperAdmin: currentUser?.role === 'admin_supervisor',
+        isImpersonating,
+        returnToSuperAdmin,
         isReadOnly,
         canEdit,
         canAddMedicine,

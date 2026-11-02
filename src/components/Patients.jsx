@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useApp } from '../context/AppContext'
+import { formatDisplayDate, formatDisplayTime } from '../lib/dateUtils'
 import {
   Users,
   UserPlus,
@@ -301,7 +302,7 @@ export const Patients = ({ onOpenPatientModal }) => {
                           </div>
                           <div className="text-[11px] text-slate-400 font-mono mt-0.5 flex items-center gap-1">
                             <Clock className="w-3 h-3" />
-                            <span>{sale.created_at ? new Date(sale.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'Today'}</span>
+                            <span>{sale.created_at ? `${formatDisplayDate(sale.created_at)} ${formatDisplayTime(sale.created_at)}` : 'Today'}</span>
                           </div>
                         </td>
 

@@ -29,6 +29,8 @@ export const AuthModal = () => {
     currentRole,
     users,
     quickSwitchUser,
+    returnToSuperAdmin,
+    isImpersonating,
     ROLES,
     logout,
     setIsUserManagementModalOpen
@@ -127,14 +129,13 @@ export const AuthModal = () => {
           <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
             <div className="inline-flex items-center gap-2 bg-white/15 border border-white/20 rounded-xl px-3 py-1.5 text-xs text-white backdrop-blur-md">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span>Active Account: <strong className="font-bold">{currentUser?.name || 'Dr. Yatish'}</strong></span>
+              <span>Active Account: <strong className="font-bold">{currentUser?.name || 'Staff User'}</strong></span>
             </div>
 
-            {!isSuperAdmin && (
+            {/* Only show return to Super Admin if Super Admin is actively testing this account */}
+            {isImpersonating && !isSuperAdmin && (
               <button
-                onClick={() => {
-                  quickSwitchUser('user-admin')
-                }}
+                onClick={returnToSuperAdmin}
                 className="inline-flex items-center gap-1.5 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs px-3 py-1.5 rounded-xl border border-purple-400 shadow-md cursor-pointer transition-all active:scale-95"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
@@ -147,22 +148,22 @@ export const AuthModal = () => {
         {/* Modal Body */}
         <div className="p-5 sm:p-6 overflow-y-auto space-y-5">
 
-          {/* If operating in a staff role: Prompt to return to Super Admin */}
-          {!isSuperAdmin && (
+          {/* If Super Admin is actively testing this staff role: Prompt to return to Super Admin */}
+          {isImpersonating && !isSuperAdmin && (
             <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-50 via-indigo-50 to-purple-50 border border-purple-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
               <div>
                 <span className="text-xs font-black text-purple-900 flex items-center gap-1.5 font-mono uppercase">
                   <ShieldCheck className="w-4 h-4 text-purple-600" />
-                  Currently Operating As Switched Staff Account
+                  Currently Testing As Switched Staff Account
                 </span>
                 <p className="text-xs text-purple-800/80 mt-0.5">
-                  You are testing as <strong>{currentUser?.name}</strong> ({currentRole?.shortLabel}). You can do anything allowed by this role, or return to Super Admin anytime.
+                  You are testing as <strong>{currentUser?.name}</strong> ({currentRole?.shortLabel}). You can test allowed features, or return to Super Admin anytime.
                 </p>
               </div>
 
               <button
                 type="button"
-                onClick={() => quickSwitchUser('user-admin')}
+                onClick={returnToSuperAdmin}
                 className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-purple-600/20 shrink-0 cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
@@ -237,158 +238,173 @@ export const AuthModal = () => {
             </div>
           </div>
 
-          {/* SECTION: Created Staff Profiles & Account Switcher */}
-          <div className="space-y-3 pt-1">
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="text-xs font-black uppercase tracking-wider font-mono text-slate-800 flex items-center gap-1.5">
-                  <Users className="w-4 h-4 text-purple-600" />
-                  Created Staff Profiles & Accounts ({createdStaff.length})
-                </h4>
-                <p className="text-[11px] text-slate-500 mt-0.5">
-                  Click <strong>"Open Account"</strong> on any staff profile below to operate as that user with their exact permissions.
-                </p>
-              </div>
+          {/* SECTION: Created Staff Profiles & Account Switcher (SUPER ADMIN ONLY) */}
+          {isSuperAdmin && (
+            <>
+              <div className="space-y-3 pt-1">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-xs font-black uppercase tracking-wider font-mono text-slate-800 flex items-center gap-1.5">
+                      <Users className="w-4 h-4 text-purple-600" />
+                      Created Staff Profiles & Accounts ({createdStaff.length})
+                    </h4>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Click <strong>"Open Account"</strong> on any staff profile below to operate as that user with their exact permissions.
+                    </p>
+                  </div>
 
-              {isSuperAdmin && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsAuthModalOpen(false)
-                    setIsUserManagementModalOpen(true)
-                  }}
-                  className="flex items-center gap-1 text-[11px] font-bold text-purple-700 hover:text-purple-900 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-2.5 py-1 rounded-xl transition-all cursor-pointer"
-                >
-                  <UserPlus className="w-3.5 h-3.5" />
-                  <span>+ Add New User</span>
-                </button>
-              )}
-            </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsAuthModalOpen(false)
+                      setIsUserManagementModalOpen(true)
+                    }}
+                    className="flex items-center gap-1 text-[11px] font-bold text-purple-700 hover:text-purple-900 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-2.5 py-1 rounded-xl transition-all cursor-pointer"
+                  >
+                    <UserPlus className="w-3.5 h-3.5" />
+                    <span>+ Add New User</span>
+                  </button>
+                </div>
 
-            {createdStaff.length === 0 ? (
-              <div className="p-5 rounded-2xl bg-slate-50 border border-dashed border-slate-300 text-center space-y-2">
-                <Users className="w-8 h-8 text-slate-400 mx-auto" />
-                <h5 className="text-xs font-bold text-slate-700">No Staff Accounts Created Yet</h5>
-                <p className="text-[11px] text-slate-500 max-w-md mx-auto">
-                  Click below to open <strong>User & Role Management</strong> to create Doctor (MO), Pharmacist, or Supervisor accounts. Once created, their profiles will appear right here so you can open and operate their accounts anytime.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsAuthModalOpen(false)
-                    setIsUserManagementModalOpen(true)
-                  }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
-                >
-                  <UserPlus className="w-3.5 h-3.5" />
-                  <span>Create Staff Account Now</span>
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-2.5">
-                {createdStaff.map((staff) => {
-                  const staffRole = ROLES[staff.role] || ROLES.pharmacist
-                  const isCurrentActive = currentUser?.id === staff.id
-
-                  return (
-                    <div
-                      key={staff.id}
-                      className={`p-3.5 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
-                        isCurrentActive
-                          ? 'bg-purple-50/60 border-purple-300 ring-2 ring-purple-400/20'
-                          : 'bg-white hover:bg-slate-50/80 border-slate-200'
-                      }`}
+                {createdStaff.length === 0 ? (
+                  <div className="p-5 rounded-2xl bg-slate-50 border border-dashed border-slate-300 text-center space-y-2">
+                    <Users className="w-8 h-8 text-slate-400 mx-auto" />
+                    <h5 className="text-xs font-bold text-slate-700">No Staff Accounts Created Yet</h5>
+                    <p className="text-[11px] text-slate-500 max-w-md mx-auto">
+                      Click below to open <strong>User & Role Management</strong> to create Doctor (MO), Pharmacist, or Supervisor accounts.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsAuthModalOpen(false)
+                        setIsUserManagementModalOpen(true)
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
                     >
-                      <div className="flex items-start gap-3">
-                        <div className={`w-10 h-10 rounded-xl text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-2xs ${
-                          staffRole.key === 'doctor_mo'
-                            ? 'bg-teal-600'
-                            : staffRole.key === 'pharmacist'
-                              ? 'bg-blue-600'
-                              : 'bg-amber-600'
-                        }`}>
-                          {staff.name.charAt(0).toUpperCase()}
-                        </div>
+                      <UserPlus className="w-3.5 h-3.5" />
+                      <span>Create Staff Account Now</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {createdStaff.map((staff) => {
+                      const staffRole = ROLES[staff.role] || ROLES.pharmacist
+                      const isCurrentActive = currentUser?.id === staff.id
 
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <h5 className="text-xs font-black text-slate-900 truncate">{staff.name}</h5>
-                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${staffRole.tagBg}`}>
-                              {staffRole.shortLabel}
-                            </span>
-                            {isCurrentActive && (
-                              <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
-                                ACTIVE NOW
+                      return (
+                        <div
+                          key={staff.id}
+                          className={`p-3.5 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                            isCurrentActive
+                              ? 'bg-purple-50/60 border-purple-300 ring-2 ring-purple-400/20'
+                              : 'bg-white hover:bg-slate-50/80 border-slate-200'
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className={`w-10 h-10 rounded-xl text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-2xs ${
+                              staffRole.key === 'doctor_mo'
+                                ? 'bg-teal-600'
+                                : staffRole.key === 'pharmacist'
+                                  ? 'bg-blue-600'
+                                  : 'bg-amber-600'
+                            }`}>
+                              {staff.name.charAt(0).toUpperCase()}
+                            </div>
+
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <h5 className="text-xs font-black text-slate-900 truncate">{staff.name}</h5>
+                                <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${staffRole.tagBg}`}>
+                                  {staffRole.shortLabel}
+                                </span>
+                                {isCurrentActive && (
+                                  <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                    ACTIVE NOW
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="text-[11px] text-slate-500 font-mono mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                                <span>User: <strong className="text-slate-800">{staff.username}</strong></span>
+                                {staff.password && <span>Pass: <strong className="text-slate-700">{staff.password}</strong></span>}
+                                {staff.designation && <span className="text-slate-400 italic font-sans">• {staff.designation}</span>}
+                              </div>
+
+                              {/* Quick capability summary */}
+                              <div className="text-[10px] text-slate-500 mt-1 flex items-center gap-1.5">
+                                {staffRole.key === 'pharmacist' && (
+                                  <span className="text-blue-700 font-medium">✓ Billing POS • 🔒 Discounts Locked</span>
+                                )}
+                                {staffRole.key === 'doctor_mo' && (
+                                  <span className="text-teal-700 font-medium">✓ Clinical Records • ✓ Individual Discounts</span>
+                                )}
+                                {staffRole.key === 'supervisor_viewer' && (
+                                  <span className="text-amber-700 font-medium">✓ Audit Records • 🔒 Read-Only</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="shrink-0 flex items-center gap-2 self-end sm:self-center">
+                            {isCurrentActive ? (
+                              <span className="text-xs font-bold text-emerald-700 flex items-center gap-1 font-mono">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                                Open (Active)
                               </span>
-                            )}
-                          </div>
-
-                          <div className="text-[11px] text-slate-500 font-mono mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5">
-                            <span>User: <strong className="text-slate-800">{staff.username}</strong></span>
-                            {staff.password && <span>Pass: <strong className="text-slate-700">{staff.password}</strong></span>}
-                            {staff.designation && <span className="text-slate-400 italic font-sans">• {staff.designation}</span>}
-                          </div>
-
-                          {/* Quick capability summary */}
-                          <div className="text-[10px] text-slate-500 mt-1 flex items-center gap-1.5">
-                            {staffRole.key === 'pharmacist' && (
-                              <span className="text-blue-700 font-medium">✓ Billing POS • ✓ Stock Inward • 🔒 Discounts Locked</span>
-                            )}
-                            {staffRole.key === 'doctor_mo' && (
-                              <span className="text-teal-700 font-medium">✓ Formulary • ✓ Individual Discounts • ✓ POS Billing</span>
-                            )}
-                            {staffRole.key === 'supervisor_viewer' && (
-                              <span className="text-amber-700 font-medium">✓ Audit Records • ✓ Stock Radar • 🔒 Read-Only</span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => quickSwitchUser(staff.id)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer active:scale-95"
+                              >
+                                <LogIn className="w-3.5 h-3.5" />
+                                <span>Open Account ➔</span>
+                              </button>
                             )}
                           </div>
                         </div>
-                      </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
 
-                      <div className="shrink-0 flex items-center gap-2 self-end sm:self-center">
-                        {isCurrentActive ? (
-                          <span className="text-xs font-bold text-emerald-700 flex items-center gap-1 font-mono">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                            Open (Active)
-                          </span>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => quickSwitchUser(staff.id)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer active:scale-95"
-                          >
-                            <LogIn className="w-3.5 h-3.5" />
-                            <span>Open Account ➔</span>
-                          </button>
-                        )}
-                      </div>
+              {/* Quick link to User & Role Management */}
+              <div className="pt-1">
+                <button
+                  onClick={() => {
+                    setIsAuthModalOpen(false)
+                    setIsUserManagementModalOpen(true)
+                  }}
+                  className="w-full flex items-center justify-between p-3 rounded-2xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-900 transition-all cursor-pointer font-bold text-xs"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center">
+                      <Users className="w-4 h-4" />
                     </div>
-                  )
-                })}
+                    <div className="text-left">
+                      <div className="text-slate-900 font-extrabold">User & Role Management</div>
+                      <div className="text-[10px] text-purple-700 font-normal">Add new staff logins, reset credentials, or assign roles</div>
+                    </div>
+                  </div>
+                  <span className="text-[11px] font-mono text-purple-700 font-black">Manage Users ➔</span>
+                </button>
               </div>
-            )}
-          </div>
+            </>
+          )}
 
-          {/* Quick link to User & Role Management */}
-          <div className="pt-1">
-            <button
-              onClick={() => {
-                setIsAuthModalOpen(false)
-                setIsUserManagementModalOpen(true)
-              }}
-              className="w-full flex items-center justify-between p-3 rounded-2xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-900 transition-all cursor-pointer font-bold text-xs"
-            >
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center">
-                  <Users className="w-4 h-4" />
-                </div>
-                <div className="text-left">
-                  <div className="text-slate-900 font-extrabold">User & Role Management</div>
-                  <div className="text-[10px] text-purple-700 font-normal">Add new staff logins, reset credentials, or assign roles</div>
-                </div>
+          {/* Secure Staff Session Notice for non-super-admins */}
+          {!isSuperAdmin && (
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-600 space-y-2">
+              <div className="font-bold text-slate-800 flex items-center gap-2">
+                <Lock className="w-4 h-4 text-slate-500" />
+                <span>Station Security & Terminal Assignment</span>
               </div>
-              <span className="text-[11px] font-mono text-purple-700 font-black">Manage Users ➔</span>
-            </button>
-          </div>
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                This account is securely locked to its assigned module. Role switching and profile access are restricted to the Super Administrator. To switch profiles or access administrator controls, please sign out and log in with Super Admin credentials.
+              </p>
+            </div>
+          )}
 
         </div>
 

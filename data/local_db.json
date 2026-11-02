@@ -8,6 +8,15 @@
       "role": "admin_supervisor",
       "designation": "Chief Medical Administrator & Super Admin",
       "phone": "+91 98765 43210"
+    },
+    {
+      "id": "user-1793525430423",
+      "username": "dfsg",
+      "password": "sfg",
+      "name": "saf",
+      "role": "pharmacist",
+      "designation": "Pharmacist",
+      "phone": ""
     }
   ],
   "medicines": [

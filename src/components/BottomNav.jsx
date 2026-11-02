@@ -15,10 +15,13 @@ export const BottomNav = () => {
     cart,
     lowStockItems,
     expiredCount,
-    criticalExpiryCount
+    criticalExpiryCount,
+    currentRole
   } = useApp()
 
   const totalExpiryAlerts = expiredCount + criticalExpiryCount
+
+  const allowedTabs = currentRole?.allowedTabs || ['pos']
 
   const tabs = [
     {
@@ -56,9 +59,14 @@ export const BottomNav = () => {
     }
   ]
 
+  const visibleTabs = tabs.filter(t => allowedTabs.includes(t.id))
+
+  // If a role only has 1 page (like Pharmacist with Billing Terminal), don't clutter mobile with a 1-item bottom bar
+  if (visibleTabs.length <= 1) return null
+
   return (
     <nav className="fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/90 py-1.5 px-2 shadow-lg lg:hidden flex items-center justify-around">
-      {tabs.map((tab) => {
+      {visibleTabs.map((tab) => {
         const Icon = tab.icon
         const isActive = activeTab === tab.id
 

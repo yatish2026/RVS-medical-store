@@ -23,6 +23,9 @@ export const Header = ({ onOpenMedicineModal, onOpenPatientModal, onOpenPdfModal
     currentRole,
     canAddMedicine,
     canManageUsers,
+    isSuperAdmin,
+    isImpersonating,
+    returnToSuperAdmin,
     quickSwitchUser,
     setIsAuthModalOpen,
     setIsUserManagementModalOpen,
@@ -154,11 +157,11 @@ export const Header = ({ onOpenMedicineModal, onOpenPatientModal, onOpenPdfModal
               </button>
             )}
 
-            {/* Switched Staff Mode: Quick One-Click Return to Super Admin */}
-            {currentUser?.role !== 'admin_supervisor' && currentUser?.username !== 'admin' && (
+            {/* Only when Super Admin is actively testing a staff role: Show Return to Super Admin */}
+            {isImpersonating && currentUser?.role !== 'admin_supervisor' && (
               <button
-                onClick={() => quickSwitchUser('user-admin')}
-                title="Exit staff role and switch back to Super Admin (Dr. Yatish)"
+                onClick={returnToSuperAdmin}
+                title="Exit testing role and switch back to Super Admin (Dr. Yatish)"
                 className="flex items-center gap-1.5 bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-600 hover:to-indigo-600 text-white border border-purple-400 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-md shadow-purple-900/20 cursor-pointer active:scale-95 animate-pulse"
               >
                 <ShieldCheck className="w-3.5 h-3.5 text-purple-200" />
@@ -167,11 +170,11 @@ export const Header = ({ onOpenMedicineModal, onOpenPatientModal, onOpenPdfModal
               </button>
             )}
 
-            {/* User Profile & Role Switcher Badge (Click to open AuthModal) */}
+            {/* User Profile Badge */}
             <button
               onClick={() => setIsAuthModalOpen(true)}
               className="flex items-center gap-2 bg-slate-100/90 hover:bg-slate-200/80 border border-slate-200/90 p-1 sm:px-2.5 sm:py-1 rounded-xl transition-all cursor-pointer group text-left"
-              title="Click to Switch Role or Log in"
+              title={isSuperAdmin ? "Click to View Users & Switch Roles" : "Active Session Profile"}
             >
               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white border border-slate-200 p-0.5 flex items-center justify-center shadow-2xs shrink-0">
                 <img src="/rvs-logo.png" alt="RVS Seal" className="w-full h-full object-contain rounded-md" />

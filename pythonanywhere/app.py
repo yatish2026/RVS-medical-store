@@ -507,18 +507,21 @@ def handle_sales():
         sale_id = data.get("id") or str(uuid.uuid4())
         invoice_number = data.get("invoice_number") or f"RVS-INV-{int(datetime.utcnow().timestamp())}"
 
+        created_at = data.get("created_at") or datetime.utcnow().isoformat()
+
         # 1. Insert into sales
         cursor.execute("""
             INSERT INTO sales (id, invoice_number, patient_uhid, patient_name, patient_phone, doctor_name,
-            subtotal, discount_percentage, discount_amount, tax_amount, grand_total, payment_mode, billed_by, billed_by_role)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            subtotal, discount_percentage, discount_amount, tax_amount, grand_total, payment_mode, billed_by, billed_by_role, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             sale_id, invoice_number, data.get("patient_uhid", ""), data.get("patient_name", "Walk-in Patient"),
             data.get("patient_phone", ""), data.get("doctor_name", "Dr. On-Duty"),
             float(data.get("subtotal") or 0), float(data.get("discount_percentage") or 0),
             float(data.get("discount_amount") or 0), float(data.get("tax_amount") or 0),
             float(data.get("grand_total") or 0), data.get("payment_mode", "Cash"),
-            data.get("billed_by", "Pharmacist"), data.get("billed_by_role", "pharmacist")
+            data.get("billed_by", "Pharmacist"), data.get("billed_by_role", "pharmacist"),
+            created_at
         ))
 
         # 2. Insert line items & deduct batch stock

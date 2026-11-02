@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useApp } from '../context/AppContext'
+import { getTodayDateKey, getLocalDateKey } from '../lib/dateUtils'
 import {
   TrendingUp,
   Package,
@@ -49,8 +50,8 @@ export const Dashboard = ({ onOpenMedicineModal, onOpenPatientModal, onOpenBatch
   const isMoOrAdmin = currentUser?.role === 'admin_supervisor' || currentUser?.role === 'doctor_mo'
 
   // Today's sales
-  const todayStr = new Date().toISOString().split('T')[0]
-  const todaysSales = sales.filter(s => s.created_at && s.created_at.startsWith(todayStr))
+  const todayStr = getTodayDateKey()
+  const todaysSales = sales.filter(s => getLocalDateKey(s.created_at) === todayStr)
   const todayRevenue = todaysSales.reduce((acc, s) => acc + (s.grand_total || 0), 0)
 
   // Critical & warning expiry items

@@ -16,7 +16,9 @@ export const ROLES = {
     isReadOnly: false,
     color: 'purple',
     gradient: 'from-purple-600 to-indigo-600',
-    tagBg: 'bg-purple-50 text-purple-700 border-purple-200'
+    tagBg: 'bg-purple-50 text-purple-700 border-purple-200',
+    allowedTabs: ['dashboard', 'inventory', 'pos', 'expiry', 'patients', 'discounts'],
+    defaultTab: 'dashboard'
   },
   doctor_mo: {
     key: 'doctor_mo',
@@ -33,7 +35,9 @@ export const ROLES = {
     isReadOnly: false,
     color: 'teal',
     gradient: 'from-teal-600 to-cyan-600',
-    tagBg: 'bg-teal-50 text-teal-700 border-teal-200'
+    tagBg: 'bg-teal-50 text-teal-700 border-teal-200',
+    allowedTabs: ['patients', 'discounts'],
+    defaultTab: 'patients'
   },
   supervisor_viewer: {
     key: 'supervisor_viewer',
@@ -50,16 +54,18 @@ export const ROLES = {
     isReadOnly: true, // Strictly read-only
     color: 'amber',
     gradient: 'from-amber-600 to-orange-600',
-    tagBg: 'bg-amber-50 text-amber-700 border-amber-200'
+    tagBg: 'bg-amber-50 text-amber-700 border-amber-200',
+    allowedTabs: ['dashboard', 'inventory', 'expiry', 'patients'],
+    defaultTab: 'dashboard'
   },
   pharmacist: {
     key: 'pharmacist',
     label: 'Pharmacist (Dispensary)',
     shortLabel: 'Pharmacist',
-    description: 'Dispensary operations. Can add medicine stock, perform patient billing, and print invoices. Strictly restricted from adding or modifying discounts (discounts must be pre-authorized by MO or Admin).',
-    badge: 'Dispensary & Stock Inward',
+    description: 'Dispensary operations. Fast patient billing, active bill dispensing, formulary lookup, and print invoices. Strictly restricted from modifying discounts or accessing administrative controls.',
+    badge: 'Dispensary Station',
     canEdit: false, // Strictly restricted from editing medicines or pricing (Connect with Admin to edit)
-    canAddMedicine: true,
+    canAddMedicine: false,
     canDeleteMedicine: false,
     canManageUsers: false,
     canApplyDiscount: false, // Locked: discounts are set by MO or Admin and reflect directly on screen
@@ -67,7 +73,9 @@ export const ROLES = {
     isReadOnly: false,
     color: 'blue',
     gradient: 'from-blue-600 to-teal-600',
-    tagBg: 'bg-blue-50 text-blue-700 border-blue-200'
+    tagBg: 'bg-blue-50 text-blue-700 border-blue-200',
+    allowedTabs: ['pos'],
+    defaultTab: 'pos'
   }
 }
 

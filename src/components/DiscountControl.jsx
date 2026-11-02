@@ -491,22 +491,26 @@ export const DiscountControl = ({ onOpenMedicineModal }) => {
         {/* Add / Set Custom Discount Bar */}
         <form
           onSubmit={handleAddMedicineDiscount}
-          className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-slate-50 to-indigo-50/40 border border-slate-200 space-y-3"
+          className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-slate-50 via-indigo-50/30 to-purple-50/20 border border-slate-200 space-y-4 shadow-2xs"
         >
           <div className="flex items-center gap-2 text-xs font-black text-slate-800 uppercase tracking-wider font-mono">
             <Plus className="w-4 h-4 text-indigo-600" />
             <span>Apply Custom Individual Discount to Any Formulation:</span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+          {/* Primary Controls Row: Medicine Selector, Spacious Input Box, Save Button */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 items-end">
             
-            {/* Medicine Selector */}
-            <div className="md:col-span-5">
+            {/* Medicine Selector (5 columns) */}
+            <div className="md:col-span-5 space-y-1.5">
+              <label className="block text-[11px] font-black text-slate-700 uppercase tracking-wider font-mono">
+                Select Formulation:
+              </label>
               <select
                 value={selectedMedId}
                 onChange={(e) => setSelectedMedId(e.target.value)}
                 disabled={!canControlMedicineDiscount}
-                className="w-full bg-white border border-slate-300 focus:border-indigo-600 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 outline-none font-medium cursor-pointer shadow-xs disabled:bg-slate-100 disabled:text-slate-400"
+                className="w-full bg-white border border-slate-300 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 outline-none font-medium cursor-pointer shadow-xs disabled:bg-slate-100 disabled:text-slate-400"
               >
                 <option value="">-- Select a Medicine from Formulary --</option>
                 {medicines.map((m) => (
@@ -517,9 +521,12 @@ export const DiscountControl = ({ onOpenMedicineModal }) => {
               </select>
             </div>
 
-            {/* Custom Discount Input */}
-            <div className="md:col-span-4 flex items-center gap-2">
-              <div className="relative flex-1">
+            {/* Custom Discount Input (3 columns - Big, wide, high-visibility box) */}
+            <div className="md:col-span-3 space-y-1.5">
+              <label className="block text-[11px] font-black text-slate-700 uppercase tracking-wider font-mono">
+                Custom Discount %:
+              </label>
+              <div className="relative">
                 <input
                   type="number"
                   min="0"
@@ -527,47 +534,53 @@ export const DiscountControl = ({ onOpenMedicineModal }) => {
                   step="any"
                   value={customMedPercent}
                   onChange={(e) => setCustomMedPercent(e.target.value)}
-                  placeholder="Enter % (e.g. 8.5)"
+                  placeholder="e.g. 10"
                   disabled={!canControlMedicineDiscount}
-                  className="w-full bg-white border border-slate-300 focus:border-indigo-600 rounded-xl pl-3.5 pr-8 py-2.5 text-xs font-bold text-slate-900 outline-none shadow-xs font-mono disabled:bg-slate-100 disabled:text-slate-400"
+                  className="w-full bg-white border-2 border-indigo-300 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 rounded-xl pl-4 pr-10 py-2.5 text-base font-black text-slate-900 outline-none shadow-xs font-mono transition-all disabled:bg-slate-100 disabled:text-slate-400"
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 font-mono font-bold text-slate-400 text-xs pointer-events-none">
+                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 font-mono font-black text-indigo-700 text-sm pointer-events-none">
                   %
                 </span>
               </div>
-
-              {/* Presets: 0% (Standard / Unpause), 5%, 10%, 15%, 20% */}
-              <div className="flex items-center gap-1 shrink-0 flex-wrap">
-                {[0, 5, 10, 15, 20].map((pct) => (
-                  <button
-                    type="button"
-                    key={pct}
-                    onClick={() => setCustomMedPercent(String(pct))}
-                    disabled={!canControlMedicineDiscount}
-                    className={`px-2 py-1 rounded-lg text-[10px] font-mono font-bold transition-all cursor-pointer border ${
-                      parseFloat(customMedPercent) === pct
-                        ? 'bg-indigo-600 text-white border-indigo-600'
-                        : 'bg-white text-slate-700 hover:bg-slate-100 border-slate-200 disabled:opacity-40 disabled:cursor-not-allowed'
-                    }`}
-                  >
-                    {pct === 0 ? '0% (Standard / Unpause)' : `${pct}%`}
-                  </button>
-                ))}
-              </div>
             </div>
 
-            {/* Apply Button */}
-            <div className="md:col-span-3">
+            {/* Apply Action Button (4 columns) */}
+            <div className="md:col-span-4">
               <button
                 type="submit"
                 disabled={!canControlMedicineDiscount || !selectedMedId}
-                className="w-full flex items-center justify-center gap-1.5 bg-indigo-700 hover:bg-indigo-800 disabled:opacity-50 text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow-xs active:scale-95 transition-all cursor-pointer"
+                className="w-full h-[42px] flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 text-white font-extrabold px-4 py-2.5 rounded-xl text-xs shadow-md shadow-indigo-600/20 active:scale-98 transition-all cursor-pointer disabled:cursor-not-allowed"
               >
-                <Plus className="w-3.5 h-3.5" />
+                <Plus className="w-4 h-4" />
                 <span>Save Medicine Discount</span>
               </button>
             </div>
 
+          </div>
+
+          {/* Quick Preset Buttons Row (Separated below so it never squishes the number box) */}
+          <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-200/80">
+            <span className="text-[11px] font-bold text-slate-500 font-mono">Quick Presets:</span>
+            {[0, 5, 10, 12, 15, 20].map((pct) => (
+              <button
+                type="button"
+                key={pct}
+                onClick={() => setCustomMedPercent(String(pct))}
+                disabled={!canControlMedicineDiscount}
+                className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer border ${
+                  parseFloat(customMedPercent) === pct
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                    : 'bg-white text-slate-700 hover:bg-slate-100 border-slate-200 disabled:opacity-40 disabled:cursor-not-allowed'
+                }`}
+              >
+                {pct === 0 ? '0% (Standard / Reset)' : `${pct}%`}
+              </button>
+            ))}
+            {selectedMedId && (
+              <span className="text-[11px] text-slate-400 font-mono ml-auto">
+                Formulary update reflects immediately on billing terminal
+              </span>
+            )}
           </div>
 
           {/* Live Medicine Calculation Simulator */}

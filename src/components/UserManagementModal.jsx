@@ -47,10 +47,9 @@ export const UserManagementModal = () => {
   const [discountReason, setDiscountReason] = useState(preApprovedDiscount?.reason || 'Standard Bill Rate (No Discount Set)')
   const [errorMsg, setErrorMsg] = useState('')
 
-  if (!isUserManagementModalOpen) return null
-
-  // Security guard
+  // Security guard: Only Super Admin can open User Management
   const isSuperAdmin = currentUser?.role === 'admin_supervisor'
+  if (!isUserManagementModalOpen || !isSuperAdmin) return null
 
   const handleCreateUser = (e) => {
     e.preventDefault()

@@ -26,6 +26,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
     sales,
     currentUser,
     currentRole,
+    isSuperAdmin,
     canManageUsers,
     isReadOnly,
     setIsAuthModalOpen,
@@ -92,6 +93,10 @@ export const Sidebar = ({ isOpen, onClose }) => {
     }
   ]
 
+  // Role-Based Module Visibility: Pharmacist only sees Billing Terminal, etc.
+  const allowedTabs = currentRole?.allowedTabs || ['pos']
+  const visibleNavItems = navItems.filter((item) => allowedTabs.includes(item.id))
+
   const handleNavClick = (id) => {
     setActiveTab(id)
     if (onClose) onClose()
@@ -134,7 +139,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
 
           {/* Nav List */}
           <nav className="space-y-1.5">
-            {navItems.map((item) => {
+            {visibleNavItems.map((item) => {
               const Icon = item.icon
               const isActive = activeTab === item.id
 
@@ -210,15 +215,18 @@ export const Sidebar = ({ isOpen, onClose }) => {
                   Active Session
                 </span>
               </div>
-              <button
-                onClick={() => {
-                  setIsAuthModalOpen(true)
-                  if (onClose) onClose()
-                }}
-                className="text-[10px] font-bold text-teal-700 hover:text-teal-900 underline cursor-pointer"
-              >
-                Switch Role
-              </button>
+              {/* Only Super Admin can switch roles directly from session card */}
+              {isSuperAdmin && (
+                <button
+                  onClick={() => {
+                    setIsAuthModalOpen(true)
+                    if (onClose) onClose()
+                  }}
+                  className="text-[10px] font-bold text-teal-700 hover:text-teal-900 underline cursor-pointer"
+                >
+                  Switch Role
+                </button>
+              )}
             </div>
 
             <div className="flex items-center gap-2 mb-2">

@@ -1,6 +1,13 @@
 import React, { useState } from 'react'
 import { useApp } from '../context/AppContext'
 import {
+  getLocalDateKey,
+  getTodayDateKey,
+  getYesterdayDateKey,
+  formatDisplayDate,
+  formatDisplayTime
+} from '../lib/dateUtils'
+import {
   X,
   TrendingUp,
   Calendar,
@@ -32,23 +39,20 @@ export const RevenueAnalyticsModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null
 
   // Date ranges calculation
-  const now = new Date()
-  const todayStr = now.toISOString().split('T')[0]
+  const todayStr = getTodayDateKey()
+  const yesterdayStr = getYesterdayDateKey()
 
-  const yesterday = new Date(now)
-  yesterday.setDate(yesterday.getDate() - 1)
-  const yesterdayStr = yesterday.toISOString().split('T')[0]
+  const sevenDaysAgoDate = new Date()
+  sevenDaysAgoDate.setDate(sevenDaysAgoDate.getDate() - 7)
+  const sevenDaysAgoStr = getLocalDateKey(sevenDaysAgoDate)
 
-  const sevenDaysAgo = new Date(now)
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-
-  const thirtyDaysAgo = new Date(now)
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+  const thirtyDaysAgoDate = new Date()
+  thirtyDaysAgoDate.setDate(thirtyDaysAgoDate.getDate() - 30)
+  const thirtyDaysAgoStr = getLocalDateKey(thirtyDaysAgoDate)
 
   // Filter sales based on selected range & search
   const filteredSales = sales.filter(s => {
-    const saleDateStr = s.created_at ? s.created_at.split('T')[0] : todayStr
-    const saleDate = new Date(s.created_at || Date.now())
+    const saleDateStr = getLocalDateKey(s.created_at)
 
     let matchesDate = true
     if (dateFilter === 'TODAY') {
@@ -56,9 +60,9 @@ export const RevenueAnalyticsModal = ({ isOpen, onClose }) => {
     } else if (dateFilter === 'YESTERDAY') {
       matchesDate = saleDateStr === yesterdayStr
     } else if (dateFilter === '7DAYS') {
-      matchesDate = saleDate >= sevenDaysAgo
+      matchesDate = saleDateStr >= sevenDaysAgoStr
     } else if (dateFilter === '30DAYS') {
-      matchesDate = saleDate >= thirtyDaysAgo
+      matchesDate = saleDateStr >= thirtyDaysAgoStr
     } else if (dateFilter === 'CUSTOM') {
       if (customStartDate && saleDateStr < customStartDate) matchesDate = false
       if (customEndDate && saleDateStr > customEndDate) matchesDate = false
@@ -75,7 +79,7 @@ export const RevenueAnalyticsModal = ({ isOpen, onClose }) => {
 
   // Group filtered sales by Day (Date string: YYYY-MM-DD)
   const salesByDay = filteredSales.reduce((acc, sale) => {
-    const dateKey = sale.created_at ? sale.created_at.split('T')[0] : todayStr
+    const dateKey = getLocalDateKey(sale.created_at)
     if (!acc[dateKey]) {
       acc[dateKey] = {
         date: dateKey,
@@ -100,7 +104,7 @@ export const RevenueAnalyticsModal = ({ isOpen, onClose }) => {
   }, {})
 
   // Sort dates descending (newest first)
-  const sortedDayKeys = Object.keys(salesByDay).sort((a, b) => new Date(b) - new Date(a))
+  const sortedDayKeys = Object.keys(salesByDay).sort((a, b) => b.localeCompare(a))
 
   // Summary Metrics
   const totalPeriodRevenue = filteredSales.reduce((acc, s) => acc + (s.grand_total || 0), 0)
@@ -281,8 +285,9 @@ export const RevenueAnalyticsModal = ({ isOpen, onClose }) => {
               sortedDayKeys.map((dateKey) => {
                 const dayData = salesByDay[dateKey]
                 const isExpanded = expandedDate === dateKey || sortedDayKeys.length === 1
-                const dateObj = new Date(dateKey + 'T00:00:00')
                 const isToday = dateKey === todayStr
+                const isYesterday = dateKey === yesterdayStr
+                const displayDateStr = formatDisplayDate(dateKey)
 
                 return (
                   <div
@@ -293,23 +298,28 @@ export const RevenueAnalyticsModal = ({ isOpen, onClose }) => {
                     <div
                       onClick={() => toggleDay(dateKey)}
                       className={`p-3.5 sm:p-4 flex items-center justify-between gap-3 cursor-pointer select-none transition-colors ${
-                        isToday ? 'bg-teal-50/50 hover:bg-teal-50' : 'bg-slate-50/60 hover:bg-slate-100/80'
+                        isToday ? 'bg-teal-50/50 hover:bg-teal-50' : isYesterday ? 'bg-amber-50/30 hover:bg-amber-50/60' : 'bg-slate-50/60 hover:bg-slate-100/80'
                       }`}
                     >
                       <div className="flex items-center gap-3">
                         <div className={`p-2 rounded-xl border ${
-                          isToday ? 'bg-teal-600 text-white border-teal-700' : 'bg-white text-slate-700 border-slate-200'
+                          isToday ? 'bg-teal-600 text-white border-teal-700' : isYesterday ? 'bg-amber-600 text-white border-amber-700' : 'bg-white text-slate-700 border-slate-200'
                         }`}>
                           <Calendar className="w-4 h-4" />
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="font-extrabold text-sm text-slate-900">
-                              {dateObj.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+                              {displayDateStr}
                             </span>
                             {isToday && (
                               <span className="text-[10px] bg-emerald-100 text-emerald-800 font-black px-2 py-0.2 rounded-full font-mono">
                                 TODAY
+                              </span>
+                            )}
+                            {isYesterday && (
+                              <span className="text-[10px] bg-amber-100 text-amber-800 font-black px-2 py-0.2 rounded-full font-mono">
+                                YESTERDAY
                               </span>
                             )}
                           </div>
@@ -341,7 +351,7 @@ export const RevenueAnalyticsModal = ({ isOpen, onClose }) => {
                     {isExpanded && (
                       <div className="p-3 sm:p-4 border-t border-slate-200 bg-white space-y-2.5">
                         <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
-                          Invoices for {dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                          Invoices for {displayDateStr}
                         </div>
 
                         <div className="space-y-2">
@@ -359,7 +369,7 @@ export const RevenueAnalyticsModal = ({ isOpen, onClose }) => {
                                     {sale.payment_mode}
                                   </span>
                                   <span className="text-[11px] text-slate-400 font-mono">
-                                    {new Date(sale.created_at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    {formatDisplayTime(sale.created_at)}
                                   </span>
                                 </div>
 

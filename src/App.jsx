@@ -23,12 +23,24 @@ import { DiscountControl } from './components/DiscountControl'
 export function App() {
   const {
     activeTab,
+    setActiveTab,
     currentUser,
+    currentRole,
     login,
     backendConnected,
     isDbExplorerOpen,
     setIsDbExplorerOpen
   } = useApp()
+
+  // Security & Role tab enforcement: Ensure user is only viewing allowed modules
+  React.useEffect(() => {
+    if (currentUser) {
+      const allowed = currentRole?.allowedTabs || ['pos']
+      if (!allowed.includes(activeTab)) {
+        setActiveTab(currentRole?.defaultTab || allowed[0] || 'pos')
+      }
+    }
+  }, [currentUser, currentRole, activeTab, setActiveTab])
 
   // Mobile drawer state
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)

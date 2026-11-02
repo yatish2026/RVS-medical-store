@@ -1,5 +1,6 @@
 import React from 'react'
 import { useApp } from '../context/AppContext'
+import { formatDisplayDate, formatDisplayTime } from '../lib/dateUtils'
 import {
   X,
   Printer,
@@ -88,7 +89,7 @@ export const InvoiceModal = () => {
                 {activeInvoice.invoice_number}
               </div>
               <div className="text-[11px] text-slate-500 font-mono">
-                Date: {new Date(activeInvoice.created_at || Date.now()).toLocaleDateString()} {new Date(activeInvoice.created_at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                Date: {formatDisplayDate(activeInvoice.created_at)} {formatDisplayTime(activeInvoice.created_at)}
               </div>
             </div>
           </div>
