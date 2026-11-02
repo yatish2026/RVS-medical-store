@@ -373,15 +373,22 @@ export const AppProvider = ({ children }) => {
   }
 
   const deleteUser = async (userId) => {
-    if (currentUser?.role !== 'admin_supervisor') {
+    if (currentUser?.role !== 'admin_supervisor' && !isImpersonating) {
       notify('Access Denied', 'Only Super Admin can delete users.', 'error')
       return false
     }
-    if (currentUser.id === userId) {
+    if (currentUser.id === userId && !isImpersonating) {
       notify('Action Blocked', 'You cannot delete your own currently active Super Admin account.', 'warning')
       return false
     }
     const target = users.find(u => u.id === userId)
+    if (target?.username === 'admin' || target?.id === 'user-admin') {
+      notify('Action Blocked', 'The primary Root Administrator account cannot be deleted.', 'warning')
+      return false
+    }
+    if (currentUser?.id === userId && isImpersonating) {
+      returnToSuperAdmin()
+    }
     setUsers(prev => prev.filter(u => u.id !== userId))
     try {
       await apiDeleteUser(userId)

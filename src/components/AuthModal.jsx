@@ -18,7 +18,8 @@ import {
   AlertCircle,
   Eye,
   Sparkles,
-  Stethoscope
+  Stethoscope,
+  Trash2
 } from 'lucide-react'
 
 export const AuthModal = () => {
@@ -33,7 +34,8 @@ export const AuthModal = () => {
     isImpersonating,
     ROLES,
     logout,
-    setIsUserManagementModalOpen
+    setIsUserManagementModalOpen,
+    deleteUser
   } = useApp()
 
   if (!isAuthModalOpen) return null
@@ -345,21 +347,38 @@ export const AuthModal = () => {
                             </div>
                           </div>
 
-                          <div className="shrink-0 flex items-center gap-2 self-end sm:self-center">
+                          <div className="shrink-0 flex items-center gap-1.5 self-end sm:self-center">
                             {isCurrentActive ? (
                               <span className="text-xs font-bold text-emerald-700 flex items-center gap-1 font-mono">
                                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                                 Open (Active)
                               </span>
                             ) : (
-                              <button
-                                type="button"
-                                onClick={() => quickSwitchUser(staff.id)}
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer active:scale-95"
-                              >
-                                <LogIn className="w-3.5 h-3.5" />
-                                <span>Open Account ➔</span>
-                              </button>
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => quickSwitchUser(staff.id)}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer active:scale-95"
+                                  title={`Open ${staff.name}'s account`}
+                                >
+                                  <LogIn className="w-3.5 h-3.5" />
+                                  <span>Open Account ➔</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (window.confirm(`Are you sure you want to permanently delete user "${staff.name}" (@${staff.username})?\n\nThis will remove their account and login credentials.`)) {
+                                      deleteUser(staff.id)
+                                    }
+                                  }}
+                                  className="flex items-center gap-1 px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 hover:text-rose-800 border border-rose-200 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 shadow-2xs"
+                                  title={`Delete account for ${staff.name}`}
+                                >
+                                  <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                                  <span>Delete</span>
+                                </button>
+                              </>
                             )}
                           </div>
                         </div>
