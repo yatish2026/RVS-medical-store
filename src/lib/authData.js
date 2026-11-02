@@ -36,8 +36,8 @@ export const ROLES = {
     color: 'teal',
     gradient: 'from-teal-600 to-cyan-600',
     tagBg: 'bg-teal-50 text-teal-700 border-teal-200',
-    allowedTabs: ['patients', 'discounts'],
-    defaultTab: 'patients'
+    allowedTabs: ['dashboard', 'inventory', 'pos', 'expiry', 'patients', 'discounts'],
+    defaultTab: 'dashboard'
   },
   supervisor_viewer: {
     key: 'supervisor_viewer',
@@ -62,19 +62,19 @@ export const ROLES = {
     key: 'pharmacist',
     label: 'Pharmacist (Dispensary)',
     shortLabel: 'Pharmacist',
-    description: 'Dispensary operations. Fast patient billing, active bill dispensing, formulary lookup, and print invoices. Strictly restricted from modifying discounts or accessing administrative controls.',
+    description: 'Dispensary operations. High-speed billing, medicine catalog, stock inward, and patient records. Strictly restricted from modifying discounts or editing medicine formulary pricing.',
     badge: 'Dispensary Station',
-    canEdit: false, // Strictly restricted from editing medicines or pricing (Connect with Admin to edit)
-    canAddMedicine: false,
+    canEdit: false, // Strictly restricted from editing existing medicine details/pricing (Admin only)
+    canAddMedicine: true, // Can upload PDF prescriptions and register new medicine formulations
     canDeleteMedicine: false,
     canManageUsers: false,
-    canApplyDiscount: false, // Locked: discounts are set by MO or Admin and reflect directly on screen
+    canApplyDiscount: false, // Strictly locked: Discounts cannot be modified or added by pharmacist
     canBill: true,
     isReadOnly: false,
     color: 'blue',
     gradient: 'from-blue-600 to-teal-600',
     tagBg: 'bg-blue-50 text-blue-700 border-blue-200',
-    allowedTabs: ['pos'],
+    allowedTabs: ['dashboard', 'inventory', 'pos', 'expiry', 'patients'],
     defaultTab: 'pos'
   }
 }
