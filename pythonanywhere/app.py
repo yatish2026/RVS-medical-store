@@ -548,6 +548,11 @@ def handle_sales():
         invoice_number = data.get("invoice_number") or f"RVS-INV-{int(datetime.utcnow().timestamp())}"
 
         created_at = data.get("created_at") or datetime.utcnow().isoformat()
+        patient_name = data.get("customer_name") or data.get("patient_name") or ""
+        patient_phone = data.get("customer_phone") or data.get("patient_phone") or ""
+        patient_uhid = data.get("uhid") or data.get("patient_uhid") or f"UHID-{int(datetime.utcnow().timestamp())}"
+        patient_doctor = data.get("doctor_name") or "Dr. On-Duty"
+        store_station = data.get("store") or "UHTC"
 
         # 1. Insert into sales
         cursor.execute("""
@@ -555,17 +560,28 @@ def handle_sales():
             subtotal, discount_percentage, discount_amount, tax_amount, grand_total, payment_mode, billed_by, billed_by_role, store, created_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
-            sale_id, invoice_number, data.get("patient_uhid", ""), data.get("patient_name", "Walk-in Patient"),
-            data.get("patient_phone", ""), data.get("doctor_name", "Dr. On-Duty"),
+            sale_id, invoice_number, patient_uhid, patient_name,
+            patient_phone, patient_doctor,
             float(data.get("subtotal") or 0), float(data.get("discount_percentage") or 0),
             float(data.get("discount_amount") or 0), float(data.get("tax_amount") or 0),
             float(data.get("grand_total") or 0), data.get("payment_mode", "Cash"),
             data.get("billed_by", "Pharmacist"), data.get("billed_by_role", "pharmacist"),
-            data.get("store") or "UHTC",
+            store_station,
             created_at
         ))
 
-        # 2. Insert line items & deduct batch stock
+        # 2. Automatically record/update in patients directory
+        if patient_name:
+            cursor.execute("""
+                INSERT OR REPLACE INTO patients (id, uhid, name, phone, age, gender, blood_group, doctor_name, store)
+                VALUES (
+                    COALESCE((SELECT id FROM patients WHERE (phone = ? AND phone != '') OR LOWER(name) = LOWER(?)), ?),
+                    COALESCE((SELECT uhid FROM patients WHERE (phone = ? AND phone != '') OR LOWER(name) = LOWER(?)), ?),
+                    ?, ?, 30, 'General', 'O+', ?, ?
+                )
+            """, (patient_phone, patient_name, str(uuid.uuid4()), patient_phone, patient_name, patient_uhid, patient_name, patient_phone, patient_doctor, store_station))
+
+        # 3. Insert line items & deduct batch stock
         items = data.get("items", [])
         for item in items:
             item_id = str(uuid.uuid4())

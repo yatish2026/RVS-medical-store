@@ -242,7 +242,7 @@ export const AppProvider = ({ children }) => {
   // POS Cart State
   const [cart, setCart] = useState([])
   const [cartCustomer, setCartCustomer] = useState({
-    name: 'Walk-in Patient',
+    name: '',
     phone: '',
     doctor: 'Dr. On-Duty Medical Officer',
     uhid: ''
@@ -1003,6 +1003,12 @@ export const AppProvider = ({ children }) => {
 
   const clearCart = () => {
     setCart([])
+    setCartCustomer({
+      name: '',
+      phone: '',
+      doctor: 'Dr. On-Duty Medical Officer',
+      uhid: ''
+    })
     if (currentUser?.role === 'pharmacist') {
       setDiscountPercent(preApprovedDiscount?.percent || 0)
     } else {
@@ -1042,6 +1048,19 @@ export const AppProvider = ({ children }) => {
       return null
     }
 
+    const patientName = (cartCustomer?.name || '').trim()
+    const patientPhone = (cartCustomer?.phone || '').trim()
+
+    if (!patientName) {
+      notify('Patient Name Mandatory', 'Please enter Patient Full Name before generating the bill.', 'error')
+      return null
+    }
+
+    if (!patientPhone) {
+      notify('Phone Number Mandatory', 'Please enter Patient Phone Number before generating the bill.', 'error')
+      return null
+    }
+
     const invoiceNumber = `RVS-INV-2026-${Math.floor(1000 + Math.random() * 9000)}`
     const saleId = generateUUID()
 
@@ -1065,8 +1084,8 @@ export const AppProvider = ({ children }) => {
       id: saleId,
       store: effectiveStore,
       invoice_number: invoiceNumber,
-      customer_name: cartCustomer.name || 'Walk-in Patient',
-      customer_phone: cartCustomer.phone || 'N/A',
+      customer_name: patientName,
+      customer_phone: patientPhone,
       doctor_name: cartCustomer.doctor || 'Dr. On-Duty Officer',
       subtotal: parseFloat(cartSubtotal.toFixed(2)),
       discount_amount: parseFloat(cartDiscountAmount.toFixed(2)),
@@ -1104,8 +1123,6 @@ export const AppProvider = ({ children }) => {
     setAllSales(prev => [newSale, ...prev])
 
     // 2.5 Automatically record or update Patient in Patients & Records directory
-    const patientName = (cartCustomer.name || '').trim() || 'Walk-in Patient'
-    const patientPhone = (cartCustomer.phone || '').trim()
     const patientDoctor = (cartCustomer.doctor || '').trim() || 'Dr. On-Duty Medical Officer'
     const prescribedMeds = saleItems.map(i => `${i.medicine_name} (${i.quantity})`).join(', ')
 
@@ -1113,17 +1130,18 @@ export const AppProvider = ({ children }) => {
       const existingIndex = prev.findIndex(p =>
         (p.store || 'UHTC') === effectiveStore &&
         ((cartCustomer.uhid && p.uhid === cartCustomer.uhid) ||
-         (patientPhone && patientPhone !== 'N/A' && p.phone === patientPhone) ||
-         (patientName !== 'Walk-in Patient' && p.name.toLowerCase() === patientName.toLowerCase()))
+         (patientPhone && p.phone === patientPhone) ||
+         (patientName && p.name && p.name.trim().toLowerCase() === patientName.toLowerCase()))
       )
 
       if (existingIndex >= 0) {
         const updated = [...prev]
         const existing = updated[existingIndex]
-        updated[existingIndex] = {
+        const updatedPatient = {
           ...existing,
           store: effectiveStore,
-          phone: patientPhone && patientPhone !== 'N/A' ? patientPhone : existing.phone,
+          name: patientName,
+          phone: patientPhone || existing.phone,
           doctor_name: patientDoctor || existing.doctor_name,
           total_spent: Number(((existing.total_spent || 0) + newSale.grand_total).toFixed(2)),
           visit_count: (existing.visit_count || 1) + 1,
@@ -1131,6 +1149,10 @@ export const AppProvider = ({ children }) => {
           last_invoice: newSale.invoice_number,
           recent_medicines: prescribedMeds
         }
+        updated[existingIndex] = updatedPatient
+        try {
+          apiCreatePatient(updatedPatient)
+        } catch (e) {}
         return updated
       } else {
         const newPatient = {
@@ -1138,7 +1160,7 @@ export const AppProvider = ({ children }) => {
           store: effectiveStore,
           uhid: cartCustomer.uhid || `UHID-2026-${Math.floor(1000 + Math.random() * 9000)}`,
           name: patientName,
-          phone: patientPhone && patientPhone !== 'N/A' ? patientPhone : '',
+          phone: patientPhone,
           gender: 'General',
           age: 'N/A',
           doctor_name: patientDoctor,
@@ -1158,8 +1180,14 @@ export const AppProvider = ({ children }) => {
       }
     })
 
-    // 3. Clear cart & open invoice receipt
+    // 3. Clear cart, reset customer fields & open invoice receipt
     setCart([])
+    setCartCustomer({
+      name: '',
+      phone: '',
+      doctor: 'Dr. On-Duty Medical Officer',
+      uhid: ''
+    })
     setActiveInvoice(newSale)
 
     // 4. Write to shared hospital database

@@ -317,7 +317,7 @@ export const Patients = ({ onOpenPatientModal }) => {
 
                         <td className="py-3.5 px-4">
                           <div className="font-bold text-slate-900 text-xs">
-                            {sale.customer_name || 'Walk-in Patient'}
+                            {sale.customer_name || 'Patient'}
                           </div>
                           <div className="text-[11px] text-slate-500 font-mono mt-0.5">
                             {sale.customer_phone && sale.customer_phone !== 'N/A' ? sale.customer_phone : 'Phone not provided'}

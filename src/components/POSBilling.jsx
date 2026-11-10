@@ -85,6 +85,8 @@ export const POSBilling = ({ onOpenMedicineModal, onOpenPdfModal }) => {
   const [selectedCategory, setSelectedCategory] = useState('ALL')
   const [paymentMode, setPaymentMode] = useState('UPI')
   const [customNotes, setCustomNotes] = useState('')
+  const [formSubmitted, setFormSubmitted] = useState(false)
+  const [patientValidationError, setPatientValidationError] = useState('')
 
   // View mode: 'catalog', 'checkout', or 'history'
   const [activePosView, setActivePosView] = useState('catalog')
@@ -137,12 +139,34 @@ export const POSBilling = ({ onOpenMedicineModal, onOpenPdfModal }) => {
         doctor: pat.doctor_name || 'Dr. On-Duty Medical Officer',
         uhid: pat.uhid
       })
+      setPatientValidationError('')
     }
   }
 
   // Handle Checkout
   const handleCheckout = async () => {
+    setFormSubmitted(true)
     if (cart.length === 0) return
+
+    const pName = (cartCustomer?.name || '').trim()
+    const pPhone = (cartCustomer?.phone || '').trim()
+
+    if (!pName && !pPhone) {
+      setPatientValidationError('Both Patient Full Name and Mobile Number are required before generating the invoice.')
+      return
+    }
+
+    if (!pName) {
+      setPatientValidationError('Patient Full Name is mandatory before generating the invoice.')
+      return
+    }
+
+    if (!pPhone) {
+      setPatientValidationError('Patient Mobile Number is mandatory before generating the invoice.')
+      return
+    }
+
+    setPatientValidationError('')
 
     try {
       confetti({
@@ -152,8 +176,12 @@ export const POSBilling = ({ onOpenMedicineModal, onOpenPdfModal }) => {
       })
     } catch (e) {}
 
-    await completeSale(paymentMode, customNotes)
-    setActivePosView('catalog')
+    const saleResult = await completeSale(paymentMode, customNotes)
+    if (saleResult) {
+      setFormSubmitted(false)
+      setPatientValidationError('')
+      setActivePosView('catalog')
+    }
   }
 
   // History filtering
@@ -551,7 +579,10 @@ export const POSBilling = ({ onOpenMedicineModal, onOpenPdfModal }) => {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <h3 className="text-xs font-extrabold uppercase tracking-wider text-teal-800 flex items-center gap-1.5">
                   <User className="w-3.5 h-3.5 text-teal-600" />
-                  Patient & Prescription Info
+                  <span>Patient & Prescription Info</span>
+                  <span className="text-[10px] font-mono font-bold text-rose-600 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-200">
+                    * Required
+                  </span>
                 </h3>
                 {/* Quick patient selector */}
                 <select
@@ -560,36 +591,74 @@ export const POSBilling = ({ onOpenMedicineModal, onOpenPdfModal }) => {
                 >
                   <option value="">-- Autofill Registered Patient --</option>
                   {patients.map(p => (
-                    <option key={p.id} value={p.uhid}>{p.name} ({p.uhid})</option>
+                    <option key={p.id} value={p.uhid}>{p.name} {p.phone ? `(${p.phone})` : ''} [{p.uhid}]</option>
                   ))}
                 </select>
               </div>
 
+              {/* Patient Validation Error Alert */}
+              {patientValidationError && (
+                <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-300 text-rose-800 text-xs flex items-center gap-2 font-bold animate-in fade-in">
+                  <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>{patientValidationError}</span>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                 <div>
-                  <label className="text-[10px] text-slate-500 font-bold">Patient Name</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[10px] text-slate-700 font-bold">
+                      Patient Full Name <span className="text-rose-500 font-black">*</span>
+                    </label>
+                    {(!cartCustomer.name || !cartCustomer.name.trim()) && (
+                      <span className="text-[9px] text-rose-600 font-mono font-bold">Mandatory</span>
+                    )}
+                  </div>
                   <input
                     type="text"
                     value={cartCustomer.name}
-                    onChange={(e) => setCartCustomer({ ...cartCustomer, name: e.target.value })}
-                    placeholder="Walk-in Patient"
-                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-2 text-slate-900 outline-none focus:border-teal-600 font-medium"
+                    onChange={(e) => {
+                      setCartCustomer({ ...cartCustomer, name: e.target.value })
+                      if (patientValidationError) setPatientValidationError('')
+                    }}
+                    placeholder="Enter patient full name..."
+                    required
+                    className={`w-full rounded-lg px-2.5 py-2 text-slate-900 outline-none transition-all font-medium ${
+                      formSubmitted && !cartCustomer.name?.trim()
+                        ? 'border-2 border-rose-500 bg-rose-50/50 ring-2 ring-rose-200'
+                        : 'bg-slate-50 border border-slate-300 focus:bg-white focus:border-teal-600'
+                    }`}
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-500 font-bold">Phone Number</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[10px] text-slate-700 font-bold">
+                      Phone Number <span className="text-rose-500 font-black">*</span>
+                    </label>
+                    {(!cartCustomer.phone || !cartCustomer.phone.trim()) && (
+                      <span className="text-[9px] text-rose-600 font-mono font-bold">Mandatory</span>
+                    )}
+                  </div>
                   <input
-                    type="text"
+                    type="tel"
                     value={cartCustomer.phone}
-                    onChange={(e) => setCartCustomer({ ...cartCustomer, phone: e.target.value })}
-                    placeholder="+91 98..."
-                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-2 text-slate-900 outline-none focus:border-teal-600 font-medium"
+                    onChange={(e) => {
+                      setCartCustomer({ ...cartCustomer, phone: e.target.value })
+                      if (patientValidationError) setPatientValidationError('')
+                    }}
+                    placeholder="Enter 10-digit phone number..."
+                    required
+                    className={`w-full rounded-lg px-2.5 py-2 text-slate-900 outline-none transition-all font-medium ${
+                      formSubmitted && !cartCustomer.phone?.trim()
+                        ? 'border-2 border-rose-500 bg-rose-50/50 ring-2 ring-rose-200'
+                        : 'bg-slate-50 border border-slate-300 focus:bg-white focus:border-teal-600'
+                    }`}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-[10px] text-slate-500 font-bold">Prescribing Doctor / OPD</label>
+                <label className="text-[10px] text-slate-500 font-bold block mb-1">Prescribing Doctor / OPD Department</label>
                 <input
                   type="text"
                   value={cartCustomer.doctor}
@@ -597,6 +666,11 @@ export const POSBilling = ({ onOpenMedicineModal, onOpenPdfModal }) => {
                   placeholder="Dr. Name / Hospital Department"
                   className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-2 text-xs text-slate-900 outline-none focus:border-teal-600 font-medium"
                 />
+              </div>
+
+              <div className="text-[10px] text-slate-500 font-mono flex items-center gap-1.5 pt-0.5 border-t border-slate-100">
+                <Users className="w-3.5 h-3.5 text-teal-600 shrink-0" />
+                <span>Patient record & invoices will be automatically recorded in the <strong>{effectiveStore} Patients Directory</strong>.</span>
               </div>
             </div>
 
@@ -949,13 +1023,25 @@ export const POSBilling = ({ onOpenMedicineModal, onOpenPdfModal }) => {
                       <span>Supervisor Audit Mode: Billing Execution Disabled</span>
                     </div>
                   ) : (
-                    <button
-                      onClick={handleCheckout}
-                      className="w-full mt-3 py-3.5 rounded-xl bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-500 hover:to-teal-600 text-white font-black text-sm uppercase tracking-wider shadow-md shadow-teal-700/20 flex items-center justify-center gap-2 active:scale-98 transition-all cursor-pointer"
-                    >
-                      <Printer className="w-4 h-4" />
-                      <span>Process & Print Invoice (₹{cartGrandTotal.toFixed(2)})</span>
-                    </button>
+                    <div className="space-y-2 mt-3">
+                      {(!cartCustomer.name?.trim() || !cartCustomer.phone?.trim()) && (
+                        <div className="text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-300 rounded-xl px-3 py-2 text-center flex items-center justify-center gap-1.5 shadow-2xs">
+                          <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                          <span>Patient Full Name & Phone Number are mandatory to generate bill</span>
+                        </div>
+                      )}
+                      <button
+                        onClick={handleCheckout}
+                        className={`w-full py-3.5 rounded-xl font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                          (!cartCustomer.name?.trim() || !cartCustomer.phone?.trim())
+                            ? 'bg-gradient-to-r from-amber-600 to-rose-600 hover:from-amber-500 hover:to-rose-500 text-white shadow-md shadow-rose-700/20 active:scale-98'
+                            : 'bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-500 hover:to-teal-600 text-white shadow-md shadow-teal-700/20 active:scale-98'
+                        }`}
+                      >
+                        <Printer className="w-4 h-4" />
+                        <span>Process & Print Invoice (₹{cartGrandTotal.toFixed(2)})</span>
+                      </button>
+                    </div>
                   )}
 
                 </div>

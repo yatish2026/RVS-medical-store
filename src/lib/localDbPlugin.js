@@ -279,6 +279,53 @@ export function localDbPlugin() {
           if (method === 'POST') {
             const newSale = await getBody(req)
             db.sales = [newSale, ...db.sales.filter(s => s.id !== newSale.id)]
+
+            // Ensure patient record is stored / updated in patients directory
+            const cName = (newSale.customer_name || '').trim()
+            const cPhone = (newSale.customer_phone || '').trim()
+            if (cName) {
+              const existingIdx = db.patients.findIndex(p =>
+                (p.store || 'UHTC') === (newSale.store || 'UHTC') &&
+                ((cPhone && cPhone !== 'N/A' && p.phone === cPhone) ||
+                 (p.name && p.name.trim().toLowerCase() === cName.toLowerCase()))
+              )
+              const prescribed = (newSale.items || []).map(i => `${i.medicine_name} (${i.quantity})`).join(', ')
+              if (existingIdx >= 0) {
+                const ex = db.patients[existingIdx]
+                db.patients[existingIdx] = {
+                  ...ex,
+                  store: newSale.store || ex.store || 'UHTC',
+                  name: cName,
+                  phone: (cPhone && cPhone !== 'N/A') ? cPhone : ex.phone,
+                  doctor_name: newSale.doctor_name || ex.doctor_name,
+                  total_spent: Number(((ex.total_spent || 0) + (newSale.grand_total || 0)).toFixed(2)),
+                  visit_count: (ex.visit_count || 1) + 1,
+                  last_visit: new Date().toISOString(),
+                  last_invoice: newSale.invoice_number,
+                  recent_medicines: prescribed || ex.recent_medicines
+                }
+              } else {
+                db.patients = [{
+                  id: newSale.patient_id || `pat-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`,
+                  store: newSale.store || 'UHTC',
+                  uhid: newSale.uhid || `UHID-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+                  name: cName,
+                  phone: (cPhone && cPhone !== 'N/A') ? cPhone : '',
+                  gender: 'General',
+                  age: 'N/A',
+                  doctor_name: newSale.doctor_name || 'Dr. On-Duty Medical Officer',
+                  total_spent: Number((newSale.grand_total || 0).toFixed(2)),
+                  visit_count: 1,
+                  last_visit: new Date().toISOString(),
+                  created_at: new Date().toISOString(),
+                  last_invoice: newSale.invoice_number,
+                  recent_medicines: prescribed,
+                  allergies: 'None',
+                  diagnosis: 'Hospital Pharmacy Prescription'
+                }, ...db.patients]
+              }
+            }
+
             writeDb(db)
             return sendJson(res, 201, newSale)
           }
