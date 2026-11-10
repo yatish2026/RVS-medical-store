@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS users (
     role VARCHAR(50) NOT NULL, -- 'admin_supervisor', 'doctor_mo', 'supervisor_viewer', 'pharmacist'
     designation VARCHAR(255),
     phone VARCHAR(50),
+    store VARCHAR(50) DEFAULT 'UHTC', -- 'UHTC', 'RHTC', 'ALL'
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -32,6 +33,7 @@ CREATE TABLE IF NOT EXISTS medicines (
     prescription_required BOOLEAN DEFAULT TRUE,
     hsn_code VARCHAR(20) DEFAULT '30049099',
     gst_rate DECIMAL(5,2) DEFAULT 12.00,
+    store VARCHAR(50) DEFAULT 'UHTC', -- 'UHTC', 'RHTC'
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -46,6 +48,7 @@ CREATE TABLE IF NOT EXISTS batches (
     selling_price DECIMAL(10,2) NOT NULL,
     current_stock INT NOT NULL DEFAULT 0,
     supplier_name VARCHAR(255),
+    store VARCHAR(50) DEFAULT 'UHTC', -- 'UHTC', 'RHTC'
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (medicine_id) REFERENCES medicines(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -62,6 +65,7 @@ CREATE TABLE IF NOT EXISTS patients (
     doctor_name VARCHAR(255),
     diagnosis TEXT,
     allergies TEXT,
+    store VARCHAR(50) DEFAULT 'UHTC',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -75,6 +79,7 @@ CREATE TABLE IF NOT EXISTS suppliers (
     gstin VARCHAR(50),
     address TEXT,
     balance_payable DECIMAL(10,2) DEFAULT 0.00,
+    store VARCHAR(50) DEFAULT 'UHTC',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -87,6 +92,7 @@ CREATE TABLE IF NOT EXISTS hospital_requisitions (
     priority VARCHAR(50) DEFAULT 'Normal',
     status VARCHAR(50) DEFAULT 'Requested',
     notes TEXT,
+    store VARCHAR(50) DEFAULT 'UHTC',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -105,6 +111,7 @@ CREATE TABLE IF NOT EXISTS sales (
     grand_total DECIMAL(10,2) NOT NULL,
     payment_mode VARCHAR(50) DEFAULT 'UPI',
     billed_by VARCHAR(255),
+    store VARCHAR(50) DEFAULT 'UHTC',
     billed_by_role VARCHAR(50),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

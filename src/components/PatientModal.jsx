@@ -12,7 +12,7 @@ import {
 } from 'lucide-react'
 
 export const PatientModal = ({ isOpen, onClose }) => {
-  const { addPatient } = useApp()
+  const { addPatient, effectiveStore } = useApp()
 
   const [form, setForm] = useState({
     name: '',
@@ -47,8 +47,17 @@ export const PatientModal = ({ isOpen, onClose }) => {
               <UserPlus className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-extrabold text-slate-900">Register Hospital Patient</h3>
-              <p className="text-xs text-slate-500">Auto-generates unique UHID & clinical profile</p>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-extrabold text-slate-900">Register Hospital Patient</h3>
+                <span className={`text-[10px] font-mono font-black px-2 py-0.5 rounded-full border shadow-2xs ${
+                  effectiveStore === 'RHTC'
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                    : 'bg-teal-50 text-teal-800 border-teal-300'
+                }`}>
+                  {effectiveStore}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500">Creating patient file in {effectiveStore === 'RHTC' ? 'Rural Health Training Centre' : 'Urban Health Training Centre'}.</p>
             </div>
           </div>
 

@@ -27,7 +27,8 @@ export const MedicineModal = ({ isOpen, onClose, initialData = null, targetMedic
     batches = [],
     suppliers = [],
     currentUser,
-    currentRole
+    currentRole,
+    effectiveStore
   } = useApp()
 
   // Mode: 'BATCH_ONLY' (inwarding new batch), 'EDIT_MEDICINE', or 'NEW_MEDICINE_WITH_BATCH'
@@ -221,7 +222,7 @@ export const MedicineModal = ({ isOpen, onClose, initialData = null, targetMedic
               {isBatchOnly ? <PackagePlus className="w-5 h-5" /> : <Pill className="w-5 h-5" />}
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <h3 className="text-base font-extrabold text-white">
                   {isBatchOnly
                     ? `Inward Stock for ${targetMedicineForBatch.name}`
@@ -229,15 +230,22 @@ export const MedicineModal = ({ isOpen, onClose, initialData = null, targetMedic
                     ? `Edit Medicine & Pricing: ${initialData.name}`
                     : 'Register New Medicine & Stock'}
                 </h3>
+                <span className={`text-[10px] font-mono font-black px-2 py-0.5 rounded-full border shadow-2xs ${
+                  effectiveStore === 'RHTC'
+                    ? 'bg-emerald-500/20 text-emerald-200 border-emerald-400/40'
+                    : 'bg-teal-500/20 text-teal-200 border-teal-400/40'
+                }`}>
+                  {effectiveStore === 'RHTC' ? '🌿 RHTC Rural Station' : '🏥 UHTC Urban Station'}
+                </span>
                 {isMoOrAdmin ? (
                   <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/30 font-mono flex items-center gap-1">
                     <ShieldCheck className="w-3 h-3 text-teal-300" />
-                    MO & Super Admin Full Access
+                    MO & Super Admin
                   </span>
                 ) : (
                   <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono flex items-center gap-1">
                     <Lock className="w-3 h-3 text-amber-300" />
-                    Pharmacist: Discounts Locked
+                    Discounts Locked
                   </span>
                 )}
               </div>

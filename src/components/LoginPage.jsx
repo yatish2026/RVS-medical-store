@@ -112,10 +112,13 @@ export const LoginPage = ({ onLoginSuccess, backendConnected }) => {
           <p className="text-xs sm:text-sm text-teal-300 font-medium mt-1">
             Hospital Dispensary Management & Clinical Formulary
           </p>
-          <div className="flex items-center justify-center gap-2 mt-2.5">
+          <div className="flex flex-wrap items-center justify-center gap-2 mt-2.5">
             <span className="text-[11px] font-mono font-bold px-3 py-1 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/30 flex items-center gap-1.5 shadow-xs">
               <ShieldCheck className="w-3.5 h-3.5 text-teal-400" />
-              Super Admin Gateway
+              Unified Admin Gateway
+            </span>
+            <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-slate-800 text-teal-200 border border-teal-500/20">
+              🏥 UHTC & 🌿 RHTC Stores
             </span>
           </div>
         </div>

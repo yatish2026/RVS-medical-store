@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react'
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react'
 import {
   INITIAL_MEDICINES,
   INITIAL_BATCHES,
@@ -7,7 +7,7 @@ import {
   INITIAL_REQUISITIONS,
   INITIAL_SALES
 } from '../lib/demoData'
-import { ROLES, INITIAL_USERS } from '../lib/authData'
+import { ROLES, INITIAL_USERS, STORES, STORE_OPTIONS } from '../lib/authData'
 import {
   generateUUID,
   checkBackendHealth,
@@ -31,9 +31,19 @@ import {
   apiUpdateDiscountPolicy,
   apiGetUsers,
   apiCreateUser,
+  apiUpdateUser,
   apiDeleteUser,
   apiSeedAllData
 } from '../lib/api'
+
+// Helper: Ensure every entity has a valid store assignment (defaults to 'UHTC')
+const ensureStoreTag = (arr, defaultStore = 'UHTC') => {
+  if (!Array.isArray(arr)) return []
+  return arr.map(item => ({
+    ...item,
+    store: item.store || defaultStore
+  }))
+}
 
 // One-time cleanup migration: purge legacy dummy demo records and old discounts so testing begins 100% fresh
 const REAL_TESTING_CLEANUP_KEY = 'rvs_clean_fresh_v6'
@@ -60,19 +70,29 @@ export const AppProvider = ({ children }) => {
   // Theme State
   const [darkMode, setDarkMode] = useState(false)
 
+  // Active Store Selection State ('UHTC' or 'RHTC', default is 'UHTC')
+  const [currentStore, setCurrentStoreState] = useState(() => {
+    const saved = localStorage.getItem('rvs_active_store')
+    if (saved === 'RHTC' || saved === 'UHTC') return saved
+    return 'UHTC'
+  })
+
   // User Authentication & Roles State - Super Admin only by default
   const [users, setUsers] = useState(() => {
     const saved = localStorage.getItem('rvs_users')
     const purgedUsernames = new Set(['dr-yatish', 'doctor_mo', 'supervisor', 'pharmacist', 'dinesh'])
     const userMap = new Map()
-    INITIAL_USERS.forEach(u => userMap.set(u.username.toLowerCase(), u))
+    INITIAL_USERS.forEach(u => userMap.set(u.username.toLowerCase(), { ...u, store: u.store || 'ALL' }))
     if (saved) {
       try {
         const parsed = JSON.parse(saved)
         if (Array.isArray(parsed)) {
           parsed.forEach(u => {
             if (u && u.username && !purgedUsernames.has(u.username.toLowerCase())) {
-              userMap.set(u.username.toLowerCase(), u)
+              userMap.set(u.username.toLowerCase(), {
+                ...u,
+                store: u.username.toLowerCase() === 'admin' ? 'ALL' : (u.store || 'UHTC')
+              })
             }
           })
         }
@@ -89,7 +109,10 @@ export const AppProvider = ({ children }) => {
       try {
         const parsed = JSON.parse(saved)
         if (parsed && parsed.id && parsed.username) {
-          return parsed
+          return {
+            ...parsed,
+            store: parsed.username.toLowerCase() === 'admin' ? 'ALL' : (parsed.store || 'UHTC')
+          }
         }
       } catch (e) {
         // fallback
@@ -102,6 +125,40 @@ export const AppProvider = ({ children }) => {
   const [isImpersonating, setIsImpersonating] = useState(() => {
     return sessionStorage.getItem('rvs_admin_impersonating') === 'true'
   })
+
+  const isSuperAdmin = currentUser?.role === 'admin_supervisor' || currentUser?.username === 'admin'
+
+  // Effective Store:
+  // - Staff accounts (pharmacist, doctor, supervisor) are strictly LOCKED to their assigned store.
+  // - Super Admin can switch between 'UHTC' and 'RHTC' at will.
+  const effectiveStore = (!isSuperAdmin && currentUser?.store && currentUser.store !== 'ALL')
+    ? currentUser.store
+    : currentStore
+
+  // Sync currentStore with assigned user store when regular staff logs in
+  useEffect(() => {
+    if (currentUser && !isSuperAdmin && currentUser.store && currentUser.store !== 'ALL') {
+      if (currentStore !== currentUser.store) {
+        setCurrentStoreState(currentUser.store)
+        localStorage.setItem('rvs_active_store', currentUser.store)
+      }
+    }
+  }, [currentUser, isSuperAdmin, currentStore])
+
+  // Super Admin store switcher
+  const switchStore = (storeId) => {
+    if (!isSuperAdmin) {
+      notify('Access Restricted', 'Only Super Administrator can switch between medical stores.', 'warning')
+      return false
+    }
+    if (storeId !== 'UHTC' && storeId !== 'RHTC') return false
+    setCurrentStoreState(storeId)
+    localStorage.setItem('rvs_active_store', storeId)
+    setCart([]) // Clear cart when switching store so items from different stores don't collide
+    const storeInfo = STORES[storeId]
+    notify(`Active Dispensary: ${storeId}`, `Switched to ${storeInfo?.fullName || storeId}. Inventory and sales scoped to this store.`, 'success')
+    return true
+  }
 
   // Pre-approved Clinical Pack Discount (Default: 0% / None - only set when explicitly authorized by MO/Admin)
   const [preApprovedDiscount, setPreApprovedDiscount] = useState(() => {
@@ -126,37 +183,61 @@ export const AppProvider = ({ children }) => {
   const [isUserManagementModalOpen, setIsUserManagementModalOpen] = useState(false)
   const [isDbExplorerOpen, setIsDbExplorerOpen] = useState(false)
 
-
-  // Medical Data States with LocalStorage Persistence
-  const [medicines, setMedicines] = useState(() => {
+  // Medical Data States with LocalStorage Persistence (ALL records across both stores)
+  const [allMedicines, setAllMedicines] = useState(() => {
     const saved = localStorage.getItem('rvs_medicines')
-    return saved ? JSON.parse(saved) : INITIAL_MEDICINES
+    return saved ? ensureStoreTag(JSON.parse(saved)) : ensureStoreTag(INITIAL_MEDICINES)
   })
 
-  const [batches, setBatches] = useState(() => {
+  const [allBatches, setAllBatches] = useState(() => {
     const saved = localStorage.getItem('rvs_batches')
-    return saved ? JSON.parse(saved) : INITIAL_BATCHES
+    return saved ? ensureStoreTag(JSON.parse(saved)) : ensureStoreTag(INITIAL_BATCHES)
   })
 
-  const [patients, setPatients] = useState(() => {
+  const [allPatients, setAllPatients] = useState(() => {
     const saved = localStorage.getItem('rvs_patients')
-    return saved ? JSON.parse(saved) : INITIAL_PATIENTS
+    return saved ? ensureStoreTag(JSON.parse(saved)) : ensureStoreTag(INITIAL_PATIENTS)
   })
 
-  const [suppliers, setSuppliers] = useState(() => {
+  const [allSuppliers, setAllSuppliers] = useState(() => {
     const saved = localStorage.getItem('rvs_suppliers')
-    return saved ? JSON.parse(saved) : INITIAL_SUPPLIERS
+    return saved ? ensureStoreTag(JSON.parse(saved)) : ensureStoreTag(INITIAL_SUPPLIERS)
   })
 
-  const [requisitions, setRequisitions] = useState(() => {
+  const [allRequisitions, setAllRequisitions] = useState(() => {
     const saved = localStorage.getItem('rvs_requisitions')
-    return saved ? JSON.parse(saved) : INITIAL_REQUISITIONS
+    return saved ? ensureStoreTag(JSON.parse(saved)) : ensureStoreTag(INITIAL_REQUISITIONS)
   })
 
-  const [sales, setSales] = useState(() => {
+  const [allSales, setAllSales] = useState(() => {
     const saved = localStorage.getItem('rvs_sales')
-    return saved ? JSON.parse(saved) : INITIAL_SALES
+    return saved ? ensureStoreTag(JSON.parse(saved)) : ensureStoreTag(INITIAL_SALES)
   })
+
+  // Filtered views based on effectiveStore (UHTC or RHTC)
+  const medicines = useMemo(() => {
+    return allMedicines.filter(m => (m.store || 'UHTC') === effectiveStore)
+  }, [allMedicines, effectiveStore])
+
+  const batches = useMemo(() => {
+    return allBatches.filter(b => (b.store || 'UHTC') === effectiveStore)
+  }, [allBatches, effectiveStore])
+
+  const sales = useMemo(() => {
+    return allSales.filter(s => (s.store || 'UHTC') === effectiveStore)
+  }, [allSales, effectiveStore])
+
+  const patients = useMemo(() => {
+    return allPatients.filter(p => (p.store || 'UHTC') === effectiveStore)
+  }, [allPatients, effectiveStore])
+
+  const requisitions = useMemo(() => {
+    return allRequisitions.filter(r => (r.store || 'UHTC') === effectiveStore)
+  }, [allRequisitions, effectiveStore])
+
+  const suppliers = useMemo(() => {
+    return allSuppliers.filter(s => !s.store || s.store === effectiveStore || s.store === 'ALL')
+  }, [allSuppliers, effectiveStore])
 
   // POS Cart State
   const [cart, setCart] = useState([])
@@ -202,31 +283,30 @@ export const AppProvider = ({ children }) => {
     }, 2800)
   }
 
-
   // Persist to local storage
   useEffect(() => {
-    localStorage.setItem('rvs_medicines', JSON.stringify(medicines))
-  }, [medicines])
+    localStorage.setItem('rvs_medicines', JSON.stringify(allMedicines))
+  }, [allMedicines])
 
   useEffect(() => {
-    localStorage.setItem('rvs_batches', JSON.stringify(batches))
-  }, [batches])
+    localStorage.setItem('rvs_batches', JSON.stringify(allBatches))
+  }, [allBatches])
 
   useEffect(() => {
-    localStorage.setItem('rvs_patients', JSON.stringify(patients))
-  }, [patients])
+    localStorage.setItem('rvs_patients', JSON.stringify(allPatients))
+  }, [allPatients])
 
   useEffect(() => {
-    localStorage.setItem('rvs_suppliers', JSON.stringify(suppliers))
-  }, [suppliers])
+    localStorage.setItem('rvs_suppliers', JSON.stringify(allSuppliers))
+  }, [allSuppliers])
 
   useEffect(() => {
-    localStorage.setItem('rvs_requisitions', JSON.stringify(requisitions))
-  }, [requisitions])
+    localStorage.setItem('rvs_requisitions', JSON.stringify(allRequisitions))
+  }, [allRequisitions])
 
   useEffect(() => {
-    localStorage.setItem('rvs_sales', JSON.stringify(sales))
-  }, [sales])
+    localStorage.setItem('rvs_sales', JSON.stringify(allSales))
+  }, [allSales])
 
   // Persist Auth & Roles to local storage
   useEffect(() => {
@@ -278,20 +358,29 @@ export const AppProvider = ({ children }) => {
 
     sessionStorage.removeItem('rvs_admin_impersonating')
     setIsImpersonating(false)
+
+    const isSuper = user.role === 'admin_supervisor' || user.username === 'admin'
+    if (!isSuper) {
+      const assignedStore = user.store || 'UHTC'
+      setCurrentStoreState(assignedStore)
+      localStorage.setItem('rvs_active_store', assignedStore)
+    }
+
     localStorage.setItem('rvs_current_user', JSON.stringify(user))
     setCurrentUser(user)
     const roleInfo = ROLES[user.role] || ROLES.pharmacist
     if (roleInfo.defaultTab) {
       setActiveTab(roleInfo.defaultTab)
     }
-    notify(`Welcome back, ${user.name}`, `Logged in as ${roleInfo.shortLabel} (${roleInfo.badge})`, 'success')
+    const storeLabel = isSuper ? 'Multi-Store Super Admin' : `${user.store || 'UHTC'} Dispensary`
+    notify(`Welcome back, ${user.name}`, `Logged in as ${roleInfo.shortLabel} • ${storeLabel}`, 'success')
     setIsAuthModalOpen(false)
     return true
   }
 
   const quickSwitchUser = (userIdOrRole) => {
     // Security Guard: Only Super Admin (or active admin impersonator) can switch profiles
-    if (currentUser?.role !== 'admin_supervisor' && !isImpersonating) {
+    if (!isSuperAdmin && !isImpersonating) {
       notify('Access Restricted', 'Only Super Administrator can switch roles or test accounts.', 'error')
       return false
     }
@@ -301,9 +390,12 @@ export const AppProvider = ({ children }) => {
            u.username?.toLowerCase() === String(userIdOrRole).toLowerCase()
     )
     if (user) {
-      if (user.role !== 'admin_supervisor') {
+      if (user.role !== 'admin_supervisor' && user.username !== 'admin') {
         sessionStorage.setItem('rvs_admin_impersonating', 'true')
         setIsImpersonating(true)
+        const userStore = user.store || 'UHTC'
+        setCurrentStoreState(userStore)
+        localStorage.setItem('rvs_active_store', userStore)
       } else {
         sessionStorage.removeItem('rvs_admin_impersonating')
         setIsImpersonating(false)
@@ -314,7 +406,7 @@ export const AppProvider = ({ children }) => {
       if (roleInfo.defaultTab) {
         setActiveTab(roleInfo.defaultTab)
       }
-      notify(`Role Switched: ${roleInfo.shortLabel}`, `Active profile: ${user.name}. Permissions updated.`, 'success')
+      notify(`Role Switched: ${roleInfo.shortLabel}`, `Active profile: ${user.name} (${user.store || 'UHTC'} Dispensary). Permissions updated.`, 'success')
       setIsAuthModalOpen(false)
       return true
     }
@@ -328,7 +420,7 @@ export const AppProvider = ({ children }) => {
     localStorage.setItem('rvs_current_user', JSON.stringify(adminUser))
     setCurrentUser(adminUser)
     setActiveTab('dashboard')
-    notify('Returned to Super Admin', 'Back to Super Administrator session (Dr. Yatish).', 'success')
+    notify('Returned to Super Admin', 'Back to Super Administrator session (Dr. Yatish). Full access to UHTC & RHTC.', 'success')
     setIsAuthModalOpen(false)
     return true
   }
@@ -342,9 +434,8 @@ export const AppProvider = ({ children }) => {
     notify('Logged Out', 'You have been securely signed out of RVS Dispensary.', 'info')
   }
 
-
   const addUser = async (userData) => {
-    if (currentUser?.role !== 'admin_supervisor') {
+    if (!isSuperAdmin) {
       notify('Access Denied', 'Only Super Admin can create user logins.', 'error')
       return false
     }
@@ -353,6 +444,7 @@ export const AppProvider = ({ children }) => {
       notify('Duplicate Username', `Username "${userData.username}" is already taken.`, 'error')
       return false
     }
+    const assignedStore = userData.store === 'RHTC' ? 'RHTC' : 'UHTC'
     const newUser = {
       id: `user-${Date.now()}`,
       username: usernameClean,
@@ -360,7 +452,8 @@ export const AppProvider = ({ children }) => {
       name: userData.name,
       role: userData.role,
       designation: userData.designation || ROLES[userData.role]?.label,
-      phone: userData.phone || ''
+      phone: userData.phone || '',
+      store: assignedStore
     }
     setUsers(prev => [...prev, newUser])
     try {
@@ -368,16 +461,31 @@ export const AppProvider = ({ children }) => {
     } catch (e) {
       console.warn('Backend user create note:', e)
     }
-    notify('User Created', `Account for ${newUser.name} (${ROLES[newUser.role]?.shortLabel}) was added.`, 'success')
+    notify('User Created', `Account for ${newUser.name} (${ROLES[newUser.role]?.shortLabel}) created and assigned to ${assignedStore} Dispensary.`, 'success')
+    return true
+  }
+
+  const updateUser = async (userId, updatedFields) => {
+    if (!isSuperAdmin && !isImpersonating) {
+      notify('Access Denied', 'Only Super Admin can update users.', 'error')
+      return false
+    }
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...updatedFields } : u))
+    try {
+      await apiUpdateUser(userId, updatedFields)
+    } catch (e) {
+      console.warn('Backend user update note:', e)
+    }
+    notify('User Updated', 'User details & assigned dispensary updated.', 'success')
     return true
   }
 
   const deleteUser = async (userId) => {
-    if (currentUser?.role !== 'admin_supervisor' && !isImpersonating) {
+    if (!isSuperAdmin && !isImpersonating) {
       notify('Access Denied', 'Only Super Admin can delete users.', 'error')
       return false
     }
-    if (currentUser.id === userId && !isImpersonating) {
+    if (currentUser?.id === userId && !isImpersonating) {
       notify('Action Blocked', 'You cannot delete your own currently active Super Admin account.', 'warning')
       return false
     }
@@ -400,7 +508,7 @@ export const AppProvider = ({ children }) => {
   }
 
   const updatePreApprovedDiscount = async (percent, reason = 'Authorized Clinical Discount') => {
-    if (currentUser?.role !== 'admin_supervisor') {
+    if (!isSuperAdmin) {
       notify('Permission Restricted', 'Only Super Admin can authorize overall bill package discounts. Medical Officers can set individual medicine discounts.', 'error')
       return false
     }
@@ -459,22 +567,22 @@ export const AppProvider = ({ children }) => {
       ])
 
       if (cloudMeds.status === 'fulfilled' && Array.isArray(cloudMeds.value) && cloudMeds.value.length > 0) {
-        setMedicines(cloudMeds.value)
+        setAllMedicines(ensureStoreTag(cloudMeds.value))
       }
       if (cloudBatches.status === 'fulfilled' && Array.isArray(cloudBatches.value) && cloudBatches.value.length > 0) {
-        setBatches(cloudBatches.value)
+        setAllBatches(ensureStoreTag(cloudBatches.value))
       }
       if (cloudPatients.status === 'fulfilled' && Array.isArray(cloudPatients.value) && cloudPatients.value.length > 0) {
-        setPatients(cloudPatients.value)
+        setAllPatients(ensureStoreTag(cloudPatients.value))
       }
       if (cloudSuppliers.status === 'fulfilled' && Array.isArray(cloudSuppliers.value) && cloudSuppliers.value.length > 0) {
-        setSuppliers(cloudSuppliers.value)
+        setAllSuppliers(ensureStoreTag(cloudSuppliers.value))
       }
       if (cloudSales.status === 'fulfilled' && Array.isArray(cloudSales.value) && cloudSales.value.length > 0) {
-        setSales(cloudSales.value)
+        setAllSales(ensureStoreTag(cloudSales.value))
       }
       if (cloudReqs.status === 'fulfilled' && Array.isArray(cloudReqs.value) && cloudReqs.value.length > 0) {
-        setRequisitions(cloudReqs.value)
+        setAllRequisitions(ensureStoreTag(cloudReqs.value))
       }
       if (discountData.status === 'fulfilled' && discountData.value?.discount_percent !== undefined) {
         const disc = Number(discountData.value.discount_percent) || 0
@@ -488,10 +596,13 @@ export const AppProvider = ({ children }) => {
       if (cloudUsers.status === 'fulfilled' && Array.isArray(cloudUsers.value) && cloudUsers.value.length > 0) {
         const purgedUsernames = new Set(['dr-yatish', 'doctor_mo', 'supervisor', 'pharmacist', 'dinesh'])
         const userMap = new Map()
-        INITIAL_USERS.forEach(u => userMap.set(u.username.toLowerCase(), u))
+        INITIAL_USERS.forEach(u => userMap.set(u.username.toLowerCase(), { ...u, store: u.store || 'ALL' }))
         cloudUsers.value.forEach(u => {
           if (u && u.username && !purgedUsernames.has(u.username.toLowerCase())) {
-            userMap.set(u.username.toLowerCase(), u)
+            userMap.set(u.username.toLowerCase(), {
+              ...u,
+              store: u.username.toLowerCase() === 'admin' ? 'ALL' : (u.store || 'UHTC')
+            })
           }
         })
         setUsers(Array.from(userMap.values()))
@@ -508,16 +619,16 @@ export const AppProvider = ({ children }) => {
     setBackendSyncing(true)
     try {
       const payload = {
-        medicines,
-        batches,
-        patients,
-        suppliers,
-        requisitions,
-        sales
+        medicines: allMedicines,
+        batches: allBatches,
+        patients: allPatients,
+        suppliers: allSuppliers,
+        requisitions: allRequisitions,
+        sales: allSales
       }
       await apiSeedAllData(payload)
       setBackendConnected(true)
-      notify('Database Populated!', 'All medicines, batches, sales, and records synced to PythonAnywhere MySQL!', 'success')
+      notify('Database Populated!', 'All multi-store medicines, batches, sales, and records synced to PythonAnywhere MySQL!', 'success')
     } catch (err) {
       console.error('PythonAnywhere seed error:', err)
       notify('Sync Notice', err.message || 'Make sure PythonAnywhere MySQL is created and running.', 'error')
@@ -551,8 +662,10 @@ export const AppProvider = ({ children }) => {
   // Add Medicine WITH initial Batch and Expiry Date
   const addMedicineWithBatch = async (medData, batchData) => {
     const medId = generateUUID()
+    const targetStore = medData.store || effectiveStore || 'UHTC'
     const newMed = {
       id: medId,
+      store: targetStore,
       name: medData.name,
       generic_name: medData.generic_name || '',
       category: medData.category || 'General',
@@ -576,6 +689,7 @@ export const AppProvider = ({ children }) => {
       newBatch = {
         id: generateUUID(),
         medicine_id: medId,
+        store: targetStore,
         batch_number: (batchData.batch_number || '').trim() || `B-${Math.floor(1000 + Math.random() * 9000)}`,
         expiry_date: batchData.expiry_date || defaultExpStr,
         cost_price: parseFloat(batchData.cost_price) || 0,
@@ -587,12 +701,12 @@ export const AppProvider = ({ children }) => {
     }
 
     // Update Local State Immediately
-    setMedicines(prev => [newMed, ...prev])
+    setAllMedicines(prev => [newMed, ...prev])
     if (newBatch) {
-      setBatches(prev => [newBatch, ...prev])
+      setAllBatches(prev => [newBatch, ...prev])
     }
 
-    // Always persist to local shared database
+    // Always persist to backend
     try {
       await apiCreateMedicine(newMed)
       if (newBatch) {
@@ -600,11 +714,11 @@ export const AppProvider = ({ children }) => {
       }
       notify(
         'Medicine & Stock Saved!',
-        `${newMed.name} (Batch: ${newBatch?.batch_number || 'N/A'}, Stock: ${newBatch?.current_stock || 0}) added to dispensary!`,
+        `${newMed.name} added to ${targetStore} Dispensary! (Batch: ${newBatch?.batch_number || 'N/A'}, Stock: ${newBatch?.current_stock || 0})`,
         'success'
       )
     } catch (e) {
-      notify('Medicine Added', `${newMed.name} recorded in dispensary formulary.`, 'info')
+      notify('Medicine Added', `${newMed.name} recorded in ${targetStore} dispensary.`, 'info')
     }
 
     return { medicine: newMed, batch: newBatch }
@@ -616,10 +730,10 @@ export const AppProvider = ({ children }) => {
       ...medData,
       default_discount_percent: parseFloat(medData.default_discount_percent) || 0
     }
-    setMedicines(prev => prev.map(m => m.id === id ? { ...m, ...cleanMedData } : m))
+    setAllMedicines(prev => prev.map(m => m.id === id ? { ...m, ...cleanMedData } : m))
 
     if (batchData) {
-      setBatches(prev => {
+      setAllBatches(prev => {
         const batchIdx = prev.findIndex(b => b.medicine_id === id)
         if (batchIdx >= 0) {
           const next = [...prev]
@@ -637,6 +751,7 @@ export const AppProvider = ({ children }) => {
           const newB = {
             id: generateUUID(),
             medicine_id: id,
+            store: cleanMedData.store || effectiveStore || 'UHTC',
             batch_number: batchData.batch_number || `BAT-${Math.floor(1000 + Math.random() * 9000)}`,
             expiry_date: batchData.expiry_date || '2028-12-31',
             cost_price: parseFloat(batchData.cost_price) || 0,
@@ -655,20 +770,20 @@ export const AppProvider = ({ children }) => {
         await apiUpdateMedicine(id, cleanMedData)
       } catch (e) {}
     }
-    notify('Formulary & Pricing Saved', `${medData.name || 'Medicine'} details, pricing & MO discount updated successfully.`, 'success')
+    notify('Formulary & Pricing Saved', `${medData.name || 'Medicine'} updated successfully in ${effectiveStore} Dispensary.`, 'success')
   }
 
   // Set or Remove Individual Medicine Pre-Approved Discount (MO & Super Admin Authority)
   const setMedicineDiscount = async (medicineId, discountPct) => {
-    if (currentUser?.role !== 'admin_supervisor' && currentUser?.role !== 'doctor_mo') {
+    if (!isSuperAdmin && currentUser?.role !== 'doctor_mo') {
       notify('Permission Restricted', 'Only Medical Officer (MO) or Super Admin can modify medicine discounts.', 'error')
       return false
     }
     const num = Math.max(0, Math.min(100, parseFloat(discountPct) || 0))
-    const target = medicines.find(m => m.id === medicineId)
+    const target = allMedicines.find(m => m.id === medicineId)
     if (!target) return false
 
-    setMedicines(prev => prev.map(m => m.id === medicineId ? { ...m, default_discount_percent: num } : m))
+    setAllMedicines(prev => prev.map(m => m.id === medicineId ? { ...m, default_discount_percent: num } : m))
 
     if (backendConnected) {
       try {
@@ -686,8 +801,8 @@ export const AppProvider = ({ children }) => {
 
   // Delete Medicine
   const deleteMedicine = async (id) => {
-    setMedicines(prev => prev.filter(m => m.id !== id))
-    setBatches(prev => prev.filter(b => b.medicine_id !== id))
+    setAllMedicines(prev => prev.filter(m => m.id !== id))
+    setAllBatches(prev => prev.filter(b => b.medicine_id !== id))
     if (backendConnected) {
       try {
         await apiDeleteMedicine(id)
@@ -698,27 +813,29 @@ export const AppProvider = ({ children }) => {
 
   // Add Batch
   const addBatch = async (batchData) => {
+    const targetStore = batchData.store || effectiveStore || 'UHTC'
     const newBatch = {
       ...batchData,
       id: generateUUID(),
+      store: targetStore,
       cost_price: parseFloat(batchData.cost_price) || 0,
       mrp: parseFloat(batchData.mrp) || 0,
       selling_price: parseFloat(batchData.selling_price) || parseFloat(batchData.mrp) || 0,
       current_stock: parseInt(batchData.current_stock, 10) || 0
     }
-    setBatches(prev => [newBatch, ...prev])
+    setAllBatches(prev => [newBatch, ...prev])
     if (backendConnected) {
       try {
         await apiCreateBatch(newBatch)
       } catch (e) {}
     }
-    notify('Stock Inward Added', `Batch ${newBatch.batch_number} recorded (+${newBatch.current_stock} units).`, 'success')
+    notify('Stock Inward Added', `Batch ${newBatch.batch_number} recorded in ${targetStore} (+${newBatch.current_stock} units).`, 'success')
     return newBatch
   }
 
   // Update Batch
   const updateBatch = async (batchId, updatedData) => {
-    setBatches(prev => prev.map(b => b.id === batchId ? { ...b, ...updatedData } : b))
+    setAllBatches(prev => prev.map(b => b.id === batchId ? { ...b, ...updatedData } : b))
     if (backendConnected) {
       try {
         await apiUpdateBatch(batchId, updatedData)
@@ -729,8 +846,10 @@ export const AppProvider = ({ children }) => {
 
   // Add Patient
   const addPatient = async (patData) => {
+    const targetStore = patData.store || effectiveStore || 'UHTC'
     const newPat = {
       id: generateUUID(),
+      store: targetStore,
       uhid: patData.uhid || `RVS-PAT-${Math.floor(1000 + Math.random() * 9000)}`,
       name: patData.name,
       phone: patData.phone || '',
@@ -742,20 +861,22 @@ export const AppProvider = ({ children }) => {
       allergies: patData.allergies || 'None',
       created_at: new Date().toISOString()
     }
-    setPatients(prev => [newPat, ...prev])
+    setAllPatients(prev => [newPat, ...prev])
     if (backendConnected) {
       try {
         await apiCreatePatient(newPat)
       } catch (e) {}
     }
-    notify('Patient Registered', `${newPat.name} (UHID: ${newPat.uhid}) registered.`, 'success')
+    notify('Patient Registered', `${newPat.name} (UHID: ${newPat.uhid}) registered in ${targetStore} dispensary.`, 'success')
     return newPat
   }
 
   // Add Supplier
   const addSupplier = async (supData) => {
+    const targetStore = supData.store || effectiveStore || 'UHTC'
     const newSup = {
       id: generateUUID(),
+      store: targetStore,
       name: supData.name,
       company_name: supData.company_name,
       phone: supData.phone,
@@ -765,7 +886,7 @@ export const AppProvider = ({ children }) => {
       balance_payable: parseFloat(supData.balance_payable) || 0,
       created_at: new Date().toISOString()
     }
-    setSuppliers(prev => [newSup, ...prev])
+    setAllSuppliers(prev => [newSup, ...prev])
     if (backendConnected) {
       try {
         await apiCreateSupplier(newSup)
@@ -777,8 +898,10 @@ export const AppProvider = ({ children }) => {
 
   // Add Ward Requisition
   const addRequisition = async (reqData) => {
+    const targetStore = reqData.store || effectiveStore || 'UHTC'
     const newReq = {
       id: generateUUID(),
+      store: targetStore,
       requisition_no: `REQ-2026-${Math.floor(100 + Math.random() * 900)}`,
       department: reqData.department,
       requested_by: reqData.requested_by,
@@ -790,19 +913,19 @@ export const AppProvider = ({ children }) => {
       notes: reqData.notes || '',
       created_at: new Date().toISOString()
     }
-    setRequisitions(prev => [newReq, ...prev])
+    setAllRequisitions(prev => [newReq, ...prev])
     if (backendConnected) {
       try {
         await apiCreateRequisition(newReq)
       } catch (e) {}
     }
-    notify('Drug Requisition Issued', `Requisition #${newReq.requisition_no} dispatched to ${newReq.department}.`, 'success')
+    notify('Drug Requisition Issued', `Requisition #${newReq.requisition_no} dispatched to ${newReq.department} (${targetStore}).`, 'success')
     return newReq
   }
 
   // Update Requisition Status
   const updateRequisitionStatus = async (id, status) => {
-    setRequisitions(prev => prev.map(r => r.id === id ? { ...r, status } : r))
+    setAllRequisitions(prev => prev.map(r => r.id === id ? { ...r, status } : r))
     if (backendConnected) {
       try {
         await apiUpdateRequisitionStatus(id, status)
@@ -835,6 +958,7 @@ export const AppProvider = ({ children }) => {
         ...cart,
         {
           id: generateUUID(),
+          store: effectiveStore,
           medicine_id: medicine.id,
           medicine_name: medicine.name,
           generic_name: medicine.generic_name,
@@ -896,8 +1020,6 @@ export const AppProvider = ({ children }) => {
   }, 0)
 
   // Overall bill discount (pushed from Admin / MO page)
-  // RULE: When an Overall Bill Discount is applied (> 0%), individual medicine discounts are PAUSED / STOPPED.
-  // When Overall Bill Discount is 0 (inactive), individual medicine discounts are ACTIVE.
   const isOverallDiscountActive = discountPercent > 0
   const cartGlobalDiscountAmount = (cartSubtotal * discountPercent) / 100
   const cartDiscountAmount = isOverallDiscountActive ? cartGlobalDiscountAmount : cartItemDiscountTotal
@@ -927,6 +1049,7 @@ export const AppProvider = ({ children }) => {
     const saleItems = cart.map(item => ({
       id: generateUUID(),
       sale_id: saleId,
+      store: effectiveStore,
       batch_id: (item.batch_id && item.batch_id.length === 36) ? item.batch_id : null,
       medicine_name: item.medicine_name,
       batch_number: item.batch_number,
@@ -940,6 +1063,7 @@ export const AppProvider = ({ children }) => {
 
     const newSale = {
       id: saleId,
+      store: effectiveStore,
       invoice_number: invoiceNumber,
       customer_name: cartCustomer.name || 'Walk-in Patient',
       customer_phone: cartCustomer.phone || 'N/A',
@@ -964,8 +1088,8 @@ export const AppProvider = ({ children }) => {
       items: saleItems
     }
 
-    // 1. Deduct stock from batches locally & on PythonAnywhere backend
-    setBatches(prev =>
+    // 1. Deduct stock from batches locally in allBatches
+    setAllBatches(prev =>
       prev.map(b => {
         const cartItem = cart.find(ci => ci.batch_id === b.id)
         if (cartItem) {
@@ -977,7 +1101,7 @@ export const AppProvider = ({ children }) => {
     )
 
     // 2. Add to sales history
-    setSales(prev => [newSale, ...prev])
+    setAllSales(prev => [newSale, ...prev])
 
     // 2.5 Automatically record or update Patient in Patients & Records directory
     const patientName = (cartCustomer.name || '').trim() || 'Walk-in Patient'
@@ -985,12 +1109,12 @@ export const AppProvider = ({ children }) => {
     const patientDoctor = (cartCustomer.doctor || '').trim() || 'Dr. On-Duty Medical Officer'
     const prescribedMeds = saleItems.map(i => `${i.medicine_name} (${i.quantity})`).join(', ')
 
-    setPatients(prev => {
-      // Check if patient already exists by UHID or phone or exact name
+    setAllPatients(prev => {
       const existingIndex = prev.findIndex(p =>
-        (cartCustomer.uhid && p.uhid === cartCustomer.uhid) ||
-        (patientPhone && patientPhone !== 'N/A' && p.phone === patientPhone) ||
-        (patientName !== 'Walk-in Patient' && p.name.toLowerCase() === patientName.toLowerCase())
+        (p.store || 'UHTC') === effectiveStore &&
+        ((cartCustomer.uhid && p.uhid === cartCustomer.uhid) ||
+         (patientPhone && patientPhone !== 'N/A' && p.phone === patientPhone) ||
+         (patientName !== 'Walk-in Patient' && p.name.toLowerCase() === patientName.toLowerCase()))
       )
 
       if (existingIndex >= 0) {
@@ -998,6 +1122,7 @@ export const AppProvider = ({ children }) => {
         const existing = updated[existingIndex]
         updated[existingIndex] = {
           ...existing,
+          store: effectiveStore,
           phone: patientPhone && patientPhone !== 'N/A' ? patientPhone : existing.phone,
           doctor_name: patientDoctor || existing.doctor_name,
           total_spent: Number(((existing.total_spent || 0) + newSale.grand_total).toFixed(2)),
@@ -1010,6 +1135,7 @@ export const AppProvider = ({ children }) => {
       } else {
         const newPatient = {
           id: generateUUID(),
+          store: effectiveStore,
           uhid: cartCustomer.uhid || `UHID-2026-${Math.floor(1000 + Math.random() * 9000)}`,
           name: patientName,
           phone: patientPhone && patientPhone !== 'N/A' ? patientPhone : '',
@@ -1039,7 +1165,7 @@ export const AppProvider = ({ children }) => {
     // 4. Write to shared hospital database
     try {
       await apiCreateSale(newSale)
-      notify('Invoice Generated!', `Invoice #${newSale.invoice_number} saved for ₹${newSale.grand_total.toFixed(2)}.`, 'success')
+      notify('Invoice Generated!', `Invoice #${newSale.invoice_number} saved for ₹${newSale.grand_total.toFixed(2)} (${effectiveStore} Dispensary).`, 'success')
     } catch (e) {
       notify('Invoice Generated (Local)', `Invoice #${newSale.invoice_number} saved locally for ₹${newSale.grand_total.toFixed(2)}.`, 'info')
     }
@@ -1047,7 +1173,7 @@ export const AppProvider = ({ children }) => {
     return newSale
   }
 
-  // Helper Stats
+  // Helper Stats scoped to the active dispensary (effectiveStore)
   const totalStockCount = batches.reduce((acc, b) => acc + (b.current_stock || 0), 0)
   const lowStockItems = medicines.filter(m => {
     const medBatches = batches.filter(b => b.medicine_id === m.id)
@@ -1055,7 +1181,7 @@ export const AppProvider = ({ children }) => {
     return stock <= (m.min_stock_alert || 20)
   })
 
-  // Expiry analysis
+  // Expiry analysis scoped to the active dispensary
   const today = new Date()
   const expiringBatches = batches.map(b => {
     const exp = new Date(b.expiry_date)
@@ -1086,26 +1212,20 @@ export const AppProvider = ({ children }) => {
   const canApplyDiscount = Boolean(currentRole.canApplyDiscount)
   const canBill = Boolean(currentRole.canBill)
 
-  // Super Admin: Reset all clinical data to empty clean slate
+  // Super Admin: Reset clinical data for active dispensary only
   const clearAllData = () => {
-    if (currentUser?.role !== 'admin_supervisor') {
+    if (!isSuperAdmin) {
       notify('Access Denied', 'Only Super Admin can reset clinical data.', 'error')
       return
     }
-    setMedicines([])
-    setBatches([])
-    setPatients([])
-    setSuppliers([])
-    setRequisitions([])
-    setSales([])
+    setAllMedicines(prev => prev.filter(m => (m.store || 'UHTC') !== effectiveStore))
+    setAllBatches(prev => prev.filter(b => (b.store || 'UHTC') !== effectiveStore))
+    setAllPatients(prev => prev.filter(p => (p.store || 'UHTC') !== effectiveStore))
+    setAllSuppliers(prev => prev.filter(s => (s.store || 'UHTC') !== effectiveStore))
+    setAllRequisitions(prev => prev.filter(r => (r.store || 'UHTC') !== effectiveStore))
+    setAllSales(prev => prev.filter(s => (s.store || 'UHTC') !== effectiveStore))
     setCart([])
-    localStorage.removeItem('rvs_medicines')
-    localStorage.removeItem('rvs_batches')
-    localStorage.removeItem('rvs_patients')
-    localStorage.removeItem('rvs_suppliers')
-    localStorage.removeItem('rvs_requisitions')
-    localStorage.removeItem('rvs_sales')
-    notify('Clean Slate Active', 'All inventory, sales, and clinical records have been cleared for real testing.', 'info')
+    notify('Clean Slate Active', `All inventory, sales, and clinical records for ${effectiveStore} Dispensary have been cleared.`, 'info')
   }
 
   return (
@@ -1115,12 +1235,26 @@ export const AppProvider = ({ children }) => {
         setActiveTab,
         darkMode,
         setDarkMode,
+        // Multi-Store (UHTC & RHTC)
+        STORES,
+        STORE_OPTIONS,
+        currentStore,
+        effectiveStore,
+        switchStore,
+        // Active Dispensary Scoped Data
         medicines,
         batches,
         patients,
         suppliers,
         requisitions,
         sales,
+        // Raw Data Across All Stores
+        allMedicines,
+        allBatches,
+        allPatients,
+        allSuppliers,
+        allRequisitions,
+        allSales,
         cart,
         cartCustomer,
         setCartCustomer,
@@ -1130,7 +1264,7 @@ export const AppProvider = ({ children }) => {
         setActiveInvoice,
         backendConnected,
         backendSyncing,
-        supabaseConnected: backendConnected, // alias for backwards compatibility
+        supabaseConnected: backendConnected,
         supabaseSyncing: backendSyncing,
         syncMessage,
         notifications,
@@ -1176,7 +1310,7 @@ export const AppProvider = ({ children }) => {
         users,
         currentUser,
         currentRole,
-        isSuperAdmin: currentUser?.role === 'admin_supervisor',
+        isSuperAdmin,
         isImpersonating,
         returnToSuperAdmin,
         isReadOnly,
@@ -1192,6 +1326,7 @@ export const AppProvider = ({ children }) => {
         quickSwitchUser,
         logout,
         addUser,
+        updateUser,
         deleteUser,
         isAuthModalOpen,
         setIsAuthModalOpen,

@@ -28,7 +28,7 @@ import {
 } from 'lucide-react'
 
 export const RevenueAnalyticsModal = ({ isOpen, onClose }) => {
-  const { sales, setActiveInvoice } = useApp()
+  const { sales, setActiveInvoice, effectiveStore } = useApp()
 
   const [dateFilter, setDateFilter] = useState('ALL')
   const [customStartDate, setCustomStartDate] = useState('')
@@ -134,12 +134,19 @@ export const RevenueAnalyticsModal = ({ isOpen, onClose }) => {
                 <h3 className="text-base sm:text-lg font-extrabold text-slate-900">
                   Daily Revenue & Billing Analytics
                 </h3>
+                <span className={`text-[10px] font-mono font-black px-2 py-0.5 rounded-full border shadow-2xs ${
+                  effectiveStore === 'RHTC'
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                    : 'bg-teal-50 text-teal-800 border-teal-300'
+                }`}>
+                  {effectiveStore === 'RHTC' ? '🌿 RHTC Rural Station' : '🏥 UHTC Urban Station'}
+                </span>
                 <span className="text-[10px] bg-teal-100 text-teal-800 font-bold px-2 py-0.5 rounded-full font-mono">
                   RVS Accounts
                 </span>
               </div>
               <p className="text-xs text-slate-500">
-                Day-wise pharmacy revenue breakdown, transaction logs, and cash flow reports
+                Revenue breakdown, transaction logs, and cash flow for {effectiveStore === 'RHTC' ? 'Rural Health Training Centre (RHTC)' : 'Urban Health Training Centre (UHTC)'}.
               </p>
             </div>
           </div>

@@ -21,6 +21,10 @@ export const DatabaseExplorerModal = ({ isOpen, onClose }) => {
     batches = [],
     patients = [],
     sales = [],
+    allMedicines = [],
+    allBatches = [],
+    allPatients = [],
+    allSales = [],
     discountPolicy,
     backendConnected
   } = useApp()
@@ -35,10 +39,10 @@ export const DatabaseExplorerModal = ({ isOpen, onClose }) => {
   const computeLocalFallbackStats = () => {
     const totalRecs =
       (users?.length || 0) +
-      (medicines?.length || 0) +
-      (batches?.length || 0) +
-      (patients?.length || 0) +
-      (sales?.length || 0) +
+      (allMedicines?.length || medicines?.length || 0) +
+      (allBatches?.length || batches?.length || 0) +
+      (allPatients?.length || patients?.length || 0) +
+      (allSales?.length || sales?.length || 0) +
       1
 
     return {
@@ -46,10 +50,10 @@ export const DatabaseExplorerModal = ({ isOpen, onClose }) => {
       total_records: totalRecs,
       file_size_kb: 'Active',
       tables: [
-        { name: 'medicines', count: medicines?.length || 0 },
-        { name: 'batches', count: batches?.length || 0 },
-        { name: 'patients', count: patients?.length || 0 },
-        { name: 'sales', count: sales?.length || 0 },
+        { name: 'medicines', count: (allMedicines?.length || medicines?.length || 0) },
+        { name: 'batches', count: (allBatches?.length || batches?.length || 0) },
+        { name: 'patients', count: (allPatients?.length || patients?.length || 0) },
+        { name: 'sales', count: (allSales?.length || sales?.length || 0) },
         { name: 'users', count: users?.length || 0 },
         { name: 'clinical_discount_policy', count: 1 }
       ],
@@ -58,16 +62,17 @@ export const DatabaseExplorerModal = ({ isOpen, onClose }) => {
   }
 
   const getLocalTableRows = (tableName) => {
-    if (tableName === 'medicines') return medicines || []
-    if (tableName === 'batches') return batches || []
-    if (tableName === 'patients') return patients || []
-    if (tableName === 'sales') return sales || []
+    if (tableName === 'medicines') return allMedicines.length > 0 ? allMedicines : medicines
+    if (tableName === 'batches') return allBatches.length > 0 ? allBatches : batches
+    if (tableName === 'patients') return allPatients.length > 0 ? allPatients : patients
+    if (tableName === 'sales') return allSales.length > 0 ? allSales : sales
     if (tableName === 'users') return users || []
     if (tableName === 'clinical_discount_policy') {
       return [discountPolicy || { discount_percent: 10, authorized_by: 'Medical Director', reason: 'Default OPD' }]
     }
     if (tableName === 'sale_items') {
-      return (sales || []).flatMap((s) => (s.items || []).map((it) => ({ sale_id: s.id, ...it })))
+      const srcSales = allSales.length > 0 ? allSales : sales
+      return (srcSales || []).flatMap((s) => (s.items || []).map((it) => ({ sale_id: s.id, ...it })))
     }
     return []
   }

@@ -68,6 +68,11 @@ export const InvoiceModal = () => {
                   <h1 className="text-xl font-black tracking-tight text-slate-900 leading-tight">
                     RVS MEDICAL STORE & HOSPITAL PHARMACY
                   </h1>
+                  <p className="text-xs text-teal-800 font-bold uppercase tracking-wider font-mono">
+                    {activeInvoice.store === 'RHTC'
+                      ? '🌿 RHTC DISPENSARY • Rural Health Training Centre'
+                      : '🏥 UHTC DISPENSARY • Urban Health Training Centre'}
+                  </p>
                   <p className="text-xs text-slate-600 font-semibold">
                     RVS University & Multi-Speciality Medical Center
                   </p>

@@ -35,7 +35,10 @@ export const AuthModal = () => {
     ROLES,
     logout,
     setIsUserManagementModalOpen,
-    deleteUser
+    deleteUser,
+    effectiveStore,
+    currentStore,
+    switchStore
   } = useApp()
 
   if (!isAuthModalOpen) return null
@@ -127,11 +130,16 @@ export const AuthModal = () => {
             </div>
           </div>
 
-          {/* Currently Active Badge */}
+          {/* Currently Active Badge & Store Badge */}
           <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
-            <div className="inline-flex items-center gap-2 bg-white/15 border border-white/20 rounded-xl px-3 py-1.5 text-xs text-white backdrop-blur-md">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span>Active Account: <strong className="font-bold">{currentUser?.name || 'Staff User'}</strong></span>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="inline-flex items-center gap-2 bg-white/15 border border-white/20 rounded-xl px-3 py-1.5 text-xs text-white backdrop-blur-md">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span>Active Account: <strong className="font-bold">{currentUser?.name || 'Staff User'}</strong></span>
+              </div>
+              <div className="inline-flex items-center gap-1.5 bg-black/20 border border-white/20 rounded-xl px-2.5 py-1.5 text-xs text-white font-mono font-bold">
+                <span>{isSuperAdmin ? '🏥 🌿 All Stores' : (currentUser?.store === 'RHTC' ? '🌿 RHTC Rural' : '🏥 UHTC Urban')}</span>
+              </div>
             </div>
 
             {/* Only show return to Super Admin if Super Admin is actively testing this account */}

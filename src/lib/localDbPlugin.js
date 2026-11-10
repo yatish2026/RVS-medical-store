@@ -12,16 +12,8 @@ const DEFAULT_DB = {
       name: 'Dr. Yatish',
       role: 'admin_supervisor',
       designation: 'Chief Medical Administrator & Super Admin',
-      phone: '+91 98765 43210'
-    },
-    {
-      id: 'user-dr-yatish',
-      username: 'dr-yatish',
-      password: 'Yatish',
-      name: 'yatish',
-      role: 'pharmacist',
-      designation: 'Dispensary Pharmacist',
-      phone: '+91 98765 00000'
+      phone: '+91 98765 43210',
+      store: 'ALL'
     }
   ],
   medicines: [],
@@ -37,14 +29,33 @@ const DEFAULT_DB = {
   }
 }
 
+function ensureStoreTag(arr, defaultStore = 'UHTC') {
+  if (!Array.isArray(arr)) return []
+  return arr.map(item => ({
+    ...item,
+    store: item.store || defaultStore
+  }))
+}
+
 function readDb() {
   try {
     if (fs.existsSync(DB_FILE)) {
       const data = JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'))
+      const usersList = (Array.isArray(data.users) && data.users.length > 0 ? data.users : DEFAULT_DB.users).map(u => ({
+        ...u,
+        store: u.username === 'admin' ? 'ALL' : (u.store || 'UHTC')
+      }))
+
       return {
         ...DEFAULT_DB,
         ...data,
-        users: Array.isArray(data.users) && data.users.length > 0 ? data.users : DEFAULT_DB.users
+        users: usersList,
+        medicines: ensureStoreTag(data.medicines),
+        batches: ensureStoreTag(data.batches),
+        patients: ensureStoreTag(data.patients),
+        suppliers: ensureStoreTag(data.suppliers),
+        requisitions: ensureStoreTag(data.requisitions),
+        sales: ensureStoreTag(data.sales)
       }
     }
   } catch (err) {
@@ -152,10 +163,20 @@ export function localDbPlugin() {
                 message: `Username "${newUser.username}" already exists.`
               })
             }
+            newUser.store = newUser.store || 'UHTC'
             db.users.push(newUser)
             writeDb(db)
             return sendJson(res, 201, { success: true, user: newUser })
           }
+        }
+
+        if (url.startsWith('/api/users/') && method === 'PUT') {
+          const userId = url.replace('/api/users/', '')
+          const updated = await getBody(req)
+          db.users = db.users.map(u => u.id === userId ? { ...u, ...updated } : u)
+          writeDb(db)
+          const target = db.users.find(u => u.id === userId)
+          return sendJson(res, 200, { success: true, user: target })
         }
 
         if (url.startsWith('/api/users/') && method === 'DELETE') {

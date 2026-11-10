@@ -28,7 +28,8 @@ export const DiscountControl = ({ onOpenMedicineModal }) => {
     currentUser,
     currentRole,
     isReadOnly,
-    setActiveTab
+    setActiveTab,
+    effectiveStore
   } = useApp()
 
   const isSuperAdmin = currentUser?.role === 'admin_supervisor'
@@ -140,13 +141,14 @@ export const DiscountControl = ({ onOpenMedicineModal }) => {
             <div className="space-y-1.5">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 border border-white/20 text-white text-xs font-semibold backdrop-blur-xs">
                 <span className="w-2 h-2 rounded-full bg-emerald-300 animate-pulse"></span>
-                Dispensary Formulary Pricing Authority
+                <span>Dispensary Formulary Pricing Authority • </span>
+                <strong className="text-emerald-200">{effectiveStore === 'RHTC' ? 'RHTC Rural Station' : 'UHTC Urban Station'}</strong>
               </div>
               <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-white leading-tight">
-                Discount Control & Pricing Policy
+                Discount Control & Pricing Policy ({effectiveStore})
               </h1>
               <p className="text-teal-50 text-xs sm:text-sm max-w-2xl leading-relaxed">
-                Configure custom overall bill package discounts pushed to dispensary terminals, and manage custom individual discounts per formulation.
+                Configure custom overall bill package discounts and formulation pricing for <strong>{effectiveStore === 'RHTC' ? 'Rural Health Training Centre (RHTC)' : 'Urban Health Training Centre (UHTC)'}</strong>.
               </p>
             </div>
           </div>

@@ -7,7 +7,8 @@
       "name": "Dr. Yatish",
       "role": "admin_supervisor",
       "designation": "Chief Medical Administrator & Super Admin",
-      "phone": "+91 98765 43210"
+      "phone": "+91 98765 43210",
+      "store": "ALL"
     },
     {
       "id": "user-1793525430423",
@@ -16,7 +17,8 @@
       "name": "saf",
       "role": "pharmacist",
       "designation": "Pharmacist",
-      "phone": ""
+      "phone": "",
+      "store": "UHTC"
     }
   ],
   "medicines": [
@@ -33,7 +35,8 @@
       "prescription_required": true,
       "hsn_code": "30049069",
       "gst_rate": 5,
-      "default_discount_percent": 5
+      "default_discount_percent": 5,
+      "store": "UHTC"
     },
     {
       "id": "6c7d745e-5def-49c5-bb3e-404f5c8be3ab",
@@ -47,7 +50,8 @@
       "min_stock_alert": 20,
       "prescription_required": true,
       "hsn_code": "30049099",
-      "gst_rate": 5
+      "gst_rate": 5,
+      "store": "UHTC"
     },
     {
       "id": "79d12277-197d-4c9d-9aa9-552fe0b305ae",
@@ -61,7 +65,8 @@
       "min_stock_alert": 20,
       "prescription_required": true,
       "hsn_code": "30049099",
-      "gst_rate": 5
+      "gst_rate": 5,
+      "store": "UHTC"
     },
     {
       "id": "b486b275-33ce-4621-be24-31a51ae544b9",
@@ -75,7 +80,8 @@
       "min_stock_alert": 20,
       "prescription_required": true,
       "hsn_code": "3004",
-      "gst_rate": 5
+      "gst_rate": 5,
+      "store": "UHTC"
     },
     {
       "id": "553a17f1-6e41-4f46-aa25-8fca4be0b97f",
@@ -89,7 +95,8 @@
       "min_stock_alert": 20,
       "prescription_required": true,
       "hsn_code": "3004",
-      "gst_rate": 5
+      "gst_rate": 5,
+      "store": "UHTC"
     },
     {
       "id": "63096bba-8ba4-435d-b659-cc79e8a63d3d",
@@ -103,7 +110,8 @@
       "min_stock_alert": 20,
       "prescription_required": true,
       "hsn_code": "9018",
-      "gst_rate": 5
+      "gst_rate": 5,
+      "store": "UHTC"
     },
     {
       "id": "002fea03-8c72-49e6-9b94-1fce55850229",
@@ -117,7 +125,8 @@
       "min_stock_alert": 20,
       "prescription_required": true,
       "hsn_code": "30051090",
-      "gst_rate": 5
+      "gst_rate": 5,
+      "store": "UHTC"
     },
     {
       "id": "e9a85071-aaa8-4cc3-a3ea-3ee10f533160",
@@ -131,7 +140,8 @@
       "min_stock_alert": 20,
       "prescription_required": true,
       "hsn_code": "3004",
-      "gst_rate": 5
+      "gst_rate": 5,
+      "store": "UHTC"
     },
     {
       "id": "808b9831-0fb9-4bfa-bf60-3c129fe2fb40",
@@ -145,7 +155,8 @@
       "min_stock_alert": 20,
       "prescription_required": true,
       "hsn_code": "30045036",
-      "gst_rate": 5
+      "gst_rate": 5,
+      "store": "UHTC"
     },
     {
       "id": "98ecbfc7-86e3-424e-be35-5e3a4fdeeaab",
@@ -159,7 +170,8 @@
       "min_stock_alert": 20,
       "prescription_required": true,
       "hsn_code": "30049099",
-      "gst_rate": 5
+      "gst_rate": 5,
+      "store": "UHTC"
     },
     {
       "id": "5ff8a4e5-a22a-459d-8983-c54fbfaa4516",
@@ -173,7 +185,8 @@
       "min_stock_alert": 20,
       "prescription_required": true,
       "hsn_code": "30049099",
-      "gst_rate": 5
+      "gst_rate": 5,
+      "store": "UHTC"
     },
     {
       "id": "78eefdc0-d43b-4249-a948-838ea0154d92",
@@ -187,7 +200,8 @@
       "min_stock_alert": 20,
       "prescription_required": true,
       "hsn_code": "30049099",
-      "gst_rate": 5
+      "gst_rate": 5,
+      "store": "UHTC"
     },
     {
       "id": "6bc294d7-9909-4805-b515-a3fd66861d6c",
@@ -201,7 +215,8 @@
       "min_stock_alert": 20,
       "prescription_required": true,
       "hsn_code": "3004",
-      "gst_rate": 5
+      "gst_rate": 5,
+      "store": "UHTC"
     },
     {
       "id": "1cd8db0c-9a43-4f39-a0e7-368f04c333b7",
@@ -215,7 +230,8 @@
       "min_stock_alert": 20,
       "prescription_required": true,
       "hsn_code": "30049099",
-      "gst_rate": 5
+      "gst_rate": 5,
+      "store": "UHTC"
     },
     {
       "id": "6a1ee464-85bf-4356-a2af-f89ba14c8a46",
@@ -229,7 +245,8 @@
       "min_stock_alert": 20,
       "prescription_required": true,
       "hsn_code": "30049049",
-      "gst_rate": 5
+      "gst_rate": 5,
+      "store": "UHTC"
     },
     {
       "id": "5f3c3576-a810-4810-adcc-a75d950fe059",
@@ -243,7 +260,8 @@
       "min_stock_alert": 20,
       "prescription_required": true,
       "hsn_code": "30049099",
-      "gst_rate": 5
+      "gst_rate": 5,
+      "store": "UHTC"
     },
     {
       "id": "c6fe88e7-8d75-48c4-a744-521b55277c36",
@@ -257,7 +275,8 @@
       "min_stock_alert": 20,
       "prescription_required": true,
       "hsn_code": "30045039",
-      "gst_rate": 5
+      "gst_rate": 5,
+      "store": "UHTC"
     },
     {
       "id": "b1229256-6898-4e27-943e-3494379dc23f",
@@ -271,7 +290,8 @@
       "min_stock_alert": 20,
       "prescription_required": true,
       "hsn_code": "30045039",
-      "gst_rate": 5
+      "gst_rate": 5,
+      "store": "UHTC"
     },
     {
       "id": "d430dc3f-6c03-44a3-a748-42e7ddd5cb57",
@@ -285,7 +305,8 @@
       "min_stock_alert": 20,
       "prescription_required": true,
       "hsn_code": "30049099",
-      "gst_rate": 5
+      "gst_rate": 5,
+      "store": "UHTC"
     },
     {
       "id": "a80578f4-419e-40d9-a383-e4fbcabec29e",
@@ -299,7 +320,8 @@
       "min_stock_alert": 20,
       "prescription_required": true,
       "hsn_code": "30049022",
-      "gst_rate": 5
+      "gst_rate": 5,
+      "store": "UHTC"
     },
     {
       "id": "ec5e1d38-c0e3-4848-878e-37beb16b2d8c",
@@ -313,7 +335,8 @@
       "min_stock_alert": 20,
       "prescription_required": true,
       "hsn_code": "30049099",
-      "gst_rate": 5
+      "gst_rate": 5,
+      "store": "UHTC"
     },
     {
       "id": "41052539-bb51-4f56-8ec8-4f6ad290a869",
@@ -327,7 +350,8 @@
       "min_stock_alert": 20,
       "prescription_required": true,
       "hsn_code": "30049099",
-      "gst_rate": 5
+      "gst_rate": 5,
+      "store": "UHTC"
     },
     {
       "id": "5ca3f7d1-3013-47b3-8dbf-22eda5679697",
@@ -341,7 +365,8 @@
       "min_stock_alert": 20,
       "prescription_required": true,
       "hsn_code": "3004",
-      "gst_rate": 5
+      "gst_rate": 5,
+      "store": "UHTC"
     },
     {
       "id": "515c10e4-b885-4258-9792-b472611d9290",
@@ -355,7 +380,8 @@
       "min_stock_alert": 20,
       "prescription_required": true,
       "hsn_code": "30049069",
-      "gst_rate": 5
+      "gst_rate": 5,
+      "store": "UHTC"
     },
     {
       "id": "74863dd5-5c92-4a54-95a3-9d4f892fcf61",
@@ -369,7 +395,8 @@
       "min_stock_alert": 20,
       "prescription_required": true,
       "hsn_code": "30049069",
-      "gst_rate": 5
+      "gst_rate": 5,
+      "store": "UHTC"
     },
     {
       "id": "aad9074a-35ac-479b-9c9c-1764d726b5d2",
@@ -383,7 +410,8 @@
       "min_stock_alert": 20,
       "prescription_required": true,
       "hsn_code": "30043913",
-      "gst_rate": 5
+      "gst_rate": 5,
+      "store": "UHTC"
     },
     {
       "id": "b111905d-e3a1-4ac4-ab2a-febd80b38f4c",
@@ -397,7 +425,8 @@
       "min_stock_alert": 20,
       "prescription_required": true,
       "hsn_code": "30049099",
-      "gst_rate": 5
+      "gst_rate": 5,
+      "store": "UHTC"
     },
     {
       "id": "be467e86-02cb-47d4-b81f-773904cd0522",
@@ -411,7 +440,8 @@
       "min_stock_alert": 20,
       "prescription_required": true,
       "hsn_code": "30032000",
-      "gst_rate": 5
+      "gst_rate": 5,
+      "store": "UHTC"
     },
     {
       "id": "53e30905-66df-45bf-bf62-b90dcf7dd0d4",
@@ -425,7 +455,8 @@
       "min_stock_alert": 20,
       "prescription_required": true,
       "hsn_code": "30049099",
-      "gst_rate": 5
+      "gst_rate": 5,
+      "store": "UHTC"
     },
     {
       "id": "ca95f629-da63-4014-8ded-60b8d2c1512f",
@@ -439,7 +470,8 @@
       "min_stock_alert": 20,
       "prescription_required": true,
       "hsn_code": "30045090",
-      "gst_rate": 5
+      "gst_rate": 5,
+      "store": "UHTC"
     },
     {
       "id": "20627003-f5ed-4f0d-8399-e77a6dc400a6",
@@ -453,7 +485,8 @@
       "min_stock_alert": 20,
       "prescription_required": true,
       "hsn_code": "30042033",
-      "gst_rate": 5
+      "gst_rate": 5,
+      "store": "UHTC"
     },
     {
       "id": "c7fe5df8-a096-4b22-8000-c2b73e233a56",
@@ -467,7 +500,8 @@
       "min_stock_alert": 20,
       "prescription_required": true,
       "hsn_code": "30045020",
-      "gst_rate": 5
+      "gst_rate": 5,
+      "store": "UHTC"
     },
     {
       "id": "dfb01936-fec1-4a46-8d02-48cf7c469953",
@@ -481,7 +515,8 @@
       "min_stock_alert": 20,
       "prescription_required": true,
       "hsn_code": "30049099",
-      "gst_rate": 5
+      "gst_rate": 5,
+      "store": "UHTC"
     },
     {
       "id": "2189ff5d-6468-4a77-8c82-ce3d912a0dcc",
@@ -495,7 +530,8 @@
       "min_stock_alert": 20,
       "prescription_required": true,
       "hsn_code": "30049099",
-      "gst_rate": 12
+      "gst_rate": 12,
+      "store": "UHTC"
     }
   ],
   "batches": [
@@ -508,7 +544,8 @@
       "mrp": 24.9,
       "selling_price": 24.9,
       "current_stock": 20,
-      "supplier_name": "V KAN PHARMA SOLUTIONS"
+      "supplier_name": "V KAN PHARMA SOLUTIONS",
+      "store": "UHTC"
     },
     {
       "id": "4047aa14-7d96-47b8-8d3b-bc6bdfc59fc7",
@@ -519,7 +556,8 @@
       "mrp": 341.81,
       "selling_price": 341.81,
       "current_stock": 4,
-      "supplier_name": "V KAN PHARMA SOLUTIONS"
+      "supplier_name": "V KAN PHARMA SOLUTIONS",
+      "store": "UHTC"
     },
     {
       "id": "88ea16a9-5999-4c10-bf27-547c19f46785",
@@ -530,7 +568,8 @@
       "mrp": 31.6,
       "selling_price": 31.6,
       "current_stock": 1,
-      "supplier_name": "V KAN PHARMA SOLUTIONS"
+      "supplier_name": "V KAN PHARMA SOLUTIONS",
+      "store": "UHTC"
     },
     {
       "id": "f784050d-a69d-41d7-b4ba-0fbe4f511119",
@@ -541,7 +580,8 @@
       "mrp": 2500,
       "selling_price": 2500,
       "current_stock": 1,
-      "supplier_name": "V KAN PHARMA SOLUTIONS"
+      "supplier_name": "V KAN PHARMA SOLUTIONS",
+      "store": "UHTC"
     },
     {
       "id": "54a2fb04-e250-4885-afc8-ac7f202afa8b",
@@ -552,7 +592,8 @@
       "mrp": 60.74,
       "selling_price": 60.74,
       "current_stock": 5,
-      "supplier_name": "V KAN PHARMA SOLUTIONS"
+      "supplier_name": "V KAN PHARMA SOLUTIONS",
+      "store": "UHTC"
     },
     {
       "id": "d89c0fc3-4d42-4142-b2c4-a4615bb8679d",
@@ -563,7 +604,8 @@
       "mrp": 201,
       "selling_price": 201,
       "current_stock": 5,
-      "supplier_name": "V KAN PHARMA SOLUTIONS"
+      "supplier_name": "V KAN PHARMA SOLUTIONS",
+      "store": "UHTC"
     },
     {
       "id": "86dcb326-e9fa-4afb-8efc-705e35bbf4a5",
@@ -574,7 +616,8 @@
       "mrp": 16.87,
       "selling_price": 16.87,
       "current_stock": 20,
-      "supplier_name": "V KAN PHARMA SOLUTIONS"
+      "supplier_name": "V KAN PHARMA SOLUTIONS",
+      "store": "UHTC"
     },
     {
       "id": "18d2069a-2e89-4d84-a4a2-114ea025dc26",
@@ -585,7 +628,8 @@
       "mrp": 1400,
       "selling_price": 1400,
       "current_stock": 1,
-      "supplier_name": "V KAN PHARMA SOLUTIONS"
+      "supplier_name": "V KAN PHARMA SOLUTIONS",
+      "store": "UHTC"
     },
     {
       "id": "00401c23-0e26-47f8-af8f-6a5f26d951ce",
@@ -596,7 +640,8 @@
       "mrp": 10.23,
       "selling_price": 10.23,
       "current_stock": 50,
-      "supplier_name": "V KAN PHARMA SOLUTIONS"
+      "supplier_name": "V KAN PHARMA SOLUTIONS",
+      "store": "UHTC"
     },
     {
       "id": "00a3951d-b215-4ab9-8ef2-78205b947565",
@@ -607,7 +652,8 @@
       "mrp": 6.08,
       "selling_price": 6.08,
       "current_stock": 100,
-      "supplier_name": "V KAN PHARMA SOLUTIONS"
+      "supplier_name": "V KAN PHARMA SOLUTIONS",
+      "store": "UHTC"
     },
     {
       "id": "f78d78f6-cbd6-48cb-bd99-bddebd5a72c0",
@@ -618,7 +664,8 @@
       "mrp": 143,
       "selling_price": 143,
       "current_stock": 1,
-      "supplier_name": "V KAN PHARMA SOLUTIONS"
+      "supplier_name": "V KAN PHARMA SOLUTIONS",
+      "store": "UHTC"
     },
     {
       "id": "8023dd85-84e9-4f76-bda6-18551196c55f",
@@ -629,7 +676,8 @@
       "mrp": 45.93,
       "selling_price": 45.93,
       "current_stock": 2,
-      "supplier_name": "V KAN PHARMA SOLUTIONS"
+      "supplier_name": "V KAN PHARMA SOLUTIONS",
+      "store": "UHTC"
     },
     {
       "id": "9cf883df-6f0e-42f0-abf7-9a89f3b80d41",
@@ -640,7 +688,8 @@
       "mrp": 40.83,
       "selling_price": 40.83,
       "current_stock": 5,
-      "supplier_name": "V KAN PHARMA SOLUTIONS"
+      "supplier_name": "V KAN PHARMA SOLUTIONS",
+      "store": "UHTC"
     },
     {
       "id": "82a9904c-002a-49a4-abae-8b34363077d8",
@@ -651,7 +700,8 @@
       "mrp": 24,
       "selling_price": 24,
       "current_stock": 10,
-      "supplier_name": "V KAN PHARMA SOLUTIONS"
+      "supplier_name": "V KAN PHARMA SOLUTIONS",
+      "store": "UHTC"
     },
     {
       "id": "2ae7b7f1-8a30-4aca-9201-af53327e703e",
@@ -662,7 +712,8 @@
       "mrp": 25.69,
       "selling_price": 25.69,
       "current_stock": 5,
-      "supplier_name": "V KAN PHARMA SOLUTIONS"
+      "supplier_name": "V KAN PHARMA SOLUTIONS",
+      "store": "UHTC"
     },
     {
       "id": "b2c6bcfb-c14d-4ecf-aa4d-5dd43c47a638",
@@ -673,7 +724,8 @@
       "mrp": 25.41,
       "selling_price": 25.41,
       "current_stock": 5,
-      "supplier_name": "V KAN PHARMA SOLUTIONS"
+      "supplier_name": "V KAN PHARMA SOLUTIONS",
+      "store": "UHTC"
     },
     {
       "id": "9697f565-3a83-4bfc-8fcc-14fbfca24a08",
@@ -684,7 +736,8 @@
       "mrp": 44,
       "selling_price": 44,
       "current_stock": 7,
-      "supplier_name": "V KAN PHARMA SOLUTIONS"
+      "supplier_name": "V KAN PHARMA SOLUTIONS",
+      "store": "UHTC"
     },
     {
       "id": "ff6a0ffc-f6af-4b89-b240-3edecb2a3d44",
@@ -695,7 +748,8 @@
       "mrp": 16.05,
       "selling_price": 16.05,
       "current_stock": 50,
-      "supplier_name": "V KAN PHARMA SOLUTIONS"
+      "supplier_name": "V KAN PHARMA SOLUTIONS",
+      "store": "UHTC"
     },
     {
       "id": "5040e4f4-73b4-42e5-ab03-6c753e6a4d10",
@@ -706,7 +760,8 @@
       "mrp": 217,
       "selling_price": 217,
       "current_stock": 5,
-      "supplier_name": "V KAN PHARMA SOLUTIONS"
+      "supplier_name": "V KAN PHARMA SOLUTIONS",
+      "store": "UHTC"
     },
     {
       "id": "a85f491a-c172-408a-92b8-aaf6a6417e3d",
@@ -717,7 +772,8 @@
       "mrp": 32.76,
       "selling_price": 32.76,
       "current_stock": 5,
-      "supplier_name": "V KAN PHARMA SOLUTIONS"
+      "supplier_name": "V KAN PHARMA SOLUTIONS",
+      "store": "UHTC"
     },
     {
       "id": "ba549223-c627-4b51-8453-b50e9bbc281e",
@@ -728,7 +784,8 @@
       "mrp": 221,
       "selling_price": 221,
       "current_stock": 5,
-      "supplier_name": "V KAN PHARMA SOLUTIONS"
+      "supplier_name": "V KAN PHARMA SOLUTIONS",
+      "store": "UHTC"
     },
     {
       "id": "55274808-1bdc-4fb5-a335-e7ee7084ed37",
@@ -739,7 +796,8 @@
       "mrp": 30,
       "selling_price": 30,
       "current_stock": 1,
-      "supplier_name": "V KAN PHARMA SOLUTIONS"
+      "supplier_name": "V KAN PHARMA SOLUTIONS",
+      "store": "UHTC"
     },
     {
       "id": "35d37d88-3373-412c-b5bb-913bed426552",
@@ -750,7 +808,8 @@
       "mrp": 40.82,
       "selling_price": 40.82,
       "current_stock": 10,
-      "supplier_name": "V KAN PHARMA SOLUTIONS"
+      "supplier_name": "V KAN PHARMA SOLUTIONS",
+      "store": "UHTC"
     },
     {
       "id": "b5a91860-f650-4af9-a8d1-2de961248d78",
@@ -761,7 +820,8 @@
       "mrp": 9.71,
       "selling_price": 9.71,
       "current_stock": 30,
-      "supplier_name": "V KAN PHARMA SOLUTIONS"
+      "supplier_name": "V KAN PHARMA SOLUTIONS",
+      "store": "UHTC"
     },
     {
       "id": "856486f3-8bb9-46e6-8caa-cdbfa07dc672",
@@ -772,7 +832,8 @@
       "mrp": 9.71,
       "selling_price": 9.71,
       "current_stock": 70,
-      "supplier_name": "V KAN PHARMA SOLUTIONS"
+      "supplier_name": "V KAN PHARMA SOLUTIONS",
+      "store": "UHTC"
     },
     {
       "id": "bf3dd95a-b8b0-4175-813b-048008991a66",
@@ -783,7 +844,8 @@
       "mrp": 10.87,
       "selling_price": 10.87,
       "current_stock": 5,
-      "supplier_name": "V KAN PHARMA SOLUTIONS"
+      "supplier_name": "V KAN PHARMA SOLUTIONS",
+      "store": "UHTC"
     },
     {
       "id": "829ee394-d37f-484f-beaf-f8cff187b4f2",
@@ -794,7 +856,8 @@
       "mrp": 6.21,
       "selling_price": 6.21,
       "current_stock": 1,
-      "supplier_name": "V KAN PHARMA SOLUTIONS"
+      "supplier_name": "V KAN PHARMA SOLUTIONS",
+      "store": "UHTC"
     },
     {
       "id": "4075052b-0f0b-4e2b-97a0-a7fa491029fd",
@@ -805,7 +868,8 @@
       "mrp": 34.83,
       "selling_price": 34.83,
       "current_stock": 1,
-      "supplier_name": "V KAN PHARMA SOLUTIONS"
+      "supplier_name": "V KAN PHARMA SOLUTIONS",
+      "store": "UHTC"
     },
     {
       "id": "ff245987-39e9-4d3f-882a-f295edb234b6",
@@ -816,7 +880,8 @@
       "mrp": 18.82,
       "selling_price": 18.82,
       "current_stock": 7,
-      "supplier_name": "V KAN PHARMA SOLUTIONS"
+      "supplier_name": "V KAN PHARMA SOLUTIONS",
+      "store": "UHTC"
     },
     {
       "id": "b04c1eaf-eca7-43d1-9383-e09c2cd30b5b",
@@ -827,7 +892,8 @@
       "mrp": 21,
       "selling_price": 21,
       "current_stock": 2,
-      "supplier_name": "V KAN PHARMA SOLUTIONS"
+      "supplier_name": "V KAN PHARMA SOLUTIONS",
+      "store": "UHTC"
     },
     {
       "id": "bb02b507-26f2-4f35-b6da-2e09a86a1576",
@@ -838,7 +904,8 @@
       "mrp": 37.48,
       "selling_price": 37.48,
       "current_stock": 10,
-      "supplier_name": "V KAN PHARMA SOLUTIONS"
+      "supplier_name": "V KAN PHARMA SOLUTIONS",
+      "store": "UHTC"
     },
     {
       "id": "d695999a-f6df-45dd-a930-b0136ba22642",
@@ -849,7 +916,8 @@
       "mrp": 37.48,
       "selling_price": 37.48,
       "current_stock": 10,
-      "supplier_name": "V KAN PHARMA SOLUTIONS"
+      "supplier_name": "V KAN PHARMA SOLUTIONS",
+      "store": "UHTC"
     },
     {
       "id": "f46cbfb6-8cb3-4cf6-8b4d-e36516c08e2e",
@@ -860,7 +928,8 @@
       "mrp": 47.82,
       "selling_price": 47.82,
       "current_stock": 2,
-      "supplier_name": "V KAN PHARMA SOLUTIONS"
+      "supplier_name": "V KAN PHARMA SOLUTIONS",
+      "store": "UHTC"
     },
     {
       "id": "79a342c9-2438-4653-aa5f-814f1c9e27a6",
@@ -871,7 +940,8 @@
       "mrp": 75,
       "selling_price": 70,
       "current_stock": 50,
-      "supplier_name": "Apollo Pharma Distributors"
+      "supplier_name": "Apollo Pharma Distributors",
+      "store": "UHTC"
     }
   ],
   "patients": [
@@ -890,7 +960,8 @@
       "last_invoice": "RVS-INV-2026-4255",
       "recent_medicines": "DICLO PLUS TAB (1), SPORLAC TAB (1)",
       "allergies": "None",
-      "diagnosis": "Hospital Pharmacy Prescription"
+      "diagnosis": "Hospital Pharmacy Prescription",
+      "store": "UHTC"
     },
     {
       "id": "189277c9-0a2a-4c23-88cb-4757b831b653",
@@ -907,7 +978,8 @@
       "last_invoice": "RVS-INV-2026-4255",
       "recent_medicines": "DICLO PLUS TAB (1), SPORLAC TAB (1)",
       "allergies": "None",
-      "diagnosis": "Hospital Pharmacy Prescription"
+      "diagnosis": "Hospital Pharmacy Prescription",
+      "store": "UHTC"
     },
     {
       "id": "0000aa1d-0cb1-46b5-a7b1-b200994a1988",
@@ -924,7 +996,8 @@
       "last_invoice": "RVS-INV-2026-7267",
       "recent_medicines": "DICLO PLUS TAB (1), SPORLAC TAB (1)",
       "allergies": "None",
-      "diagnosis": "Hospital Pharmacy Prescription"
+      "diagnosis": "Hospital Pharmacy Prescription",
+      "store": "UHTC"
     },
     {
       "id": "fe3daade-03d9-4002-affb-3ec821b9c8f3",
@@ -941,7 +1014,8 @@
       "last_invoice": "RVS-INV-2026-7267",
       "recent_medicines": "DICLO PLUS TAB (1), SPORLAC TAB (1)",
       "allergies": "None",
-      "diagnosis": "Hospital Pharmacy Prescription"
+      "diagnosis": "Hospital Pharmacy Prescription",
+      "store": "UHTC"
     },
     {
       "id": "bd384201-0956-4fcd-be2d-c22790578e8f",
@@ -958,7 +1032,8 @@
       "last_invoice": "RVS-INV-2026-8697",
       "recent_medicines": "DICLO PLUS TAB (1)",
       "allergies": "None",
-      "diagnosis": "Hospital Pharmacy Prescription"
+      "diagnosis": "Hospital Pharmacy Prescription",
+      "store": "UHTC"
     },
     {
       "id": "4ae411dd-a211-4a55-8b63-d386a2b65972",
@@ -975,7 +1050,8 @@
       "last_invoice": "RVS-INV-2026-8697",
       "recent_medicines": "DICLO PLUS TAB (1)",
       "allergies": "None",
-      "diagnosis": "Hospital Pharmacy Prescription"
+      "diagnosis": "Hospital Pharmacy Prescription",
+      "store": "UHTC"
     }
   ],
   "suppliers": [],
@@ -1027,7 +1103,8 @@
           "individual_discount_paused": false,
           "total_price": 341.81
         }
-      ]
+      ],
+      "store": "UHTC"
     },
     {
       "id": "99c72881-3e76-4cf5-b103-e2ef1e54d856",
@@ -1075,7 +1152,8 @@
           "individual_discount_paused": false,
           "total_price": 341.81
         }
-      ]
+      ],
+      "store": "UHTC"
     },
     {
       "id": "23aa0452-d6c2-45be-8a26-5c4dfd844dd4",
@@ -1105,7 +1183,8 @@
           "discount_percent": 5,
           "total_price": 24.9
         }
-      ]
+      ],
+      "store": "UHTC"
     },
     {
       "id": "465c96dc-2197-40e7-b170-8816f6a34cbb",
@@ -1135,7 +1214,8 @@
           "discount_percent": 0,
           "total_price": 70
         }
-      ]
+      ],
+      "store": "UHTC"
     }
   ],
   "discountPolicy": {

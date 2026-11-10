@@ -77,7 +77,8 @@ export const POSBilling = ({ onOpenMedicineModal, onOpenPdfModal }) => {
     canApplyDiscount,
     isReadOnly,
     preApprovedDiscount,
-    updatePreApprovedDiscount
+    updatePreApprovedDiscount,
+    effectiveStore
   } = useApp()
 
   const [searchQuery, setSearchQuery] = useState('')
@@ -212,22 +213,45 @@ export const POSBilling = ({ onOpenMedicineModal, onOpenPdfModal }) => {
   return (
     <div className="space-y-4 animate-in fade-in duration-300">
       
-      {/* Top View Selector Navigation Bar */}
-      <div className="flex items-center bg-white p-1 rounded-2xl border border-slate-200 shadow-xs">
-        <button
-          onClick={() => setActivePosView('catalog')}
-          className={`flex-1 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
-            activePosView === 'catalog'
-              ? 'bg-teal-600 text-white shadow-xs'
-              : 'text-slate-600 hover:text-slate-900'
-          }`}
-        >
-          1. Medicines Catalog
-        </button>
+      {/* Top Bar with View Selector & Active Store Identifier */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-white p-2 rounded-2xl border border-slate-200 shadow-xs">
+        <div className="flex items-center gap-2 pl-1">
+          <div className="w-8 h-8 rounded-xl bg-teal-50 border border-teal-200 flex items-center justify-center shrink-0">
+            <ShoppingCart className="w-4 h-4 text-teal-700" />
+          </div>
+          <div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-black text-slate-900">Billing Terminal</span>
+              <span className={`text-[10px] font-mono font-black px-2 py-0.5 rounded-full border shadow-2xs ${
+                effectiveStore === 'RHTC'
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                  : 'bg-teal-50 text-teal-800 border-teal-300'
+              }`}>
+                {effectiveStore === 'RHTC' ? '🌿 RHTC Rural Station' : '🏥 UHTC Urban Station'}
+              </span>
+            </div>
+            <p className="text-[10px] text-slate-500 font-mono">
+              Generating clinical invoice for {effectiveStore === 'RHTC' ? 'Rural Health Training Centre' : 'Urban Health Training Centre'}
+            </p>
+          </div>
+        </div>
 
-        <button
-          onClick={() => setActivePosView('checkout')}
-          className={`flex-1 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all relative flex items-center justify-center gap-1.5 cursor-pointer ${
+        {/* View Switcher Navigation Bar */}
+        <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+          <button
+            onClick={() => setActivePosView('catalog')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              activePosView === 'catalog'
+                ? 'bg-teal-600 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            1. Medicines Catalog
+          </button>
+
+          <button
+            onClick={() => setActivePosView('checkout')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all relative flex items-center justify-center gap-1.5 cursor-pointer ${
             activePosView === 'checkout'
               ? 'bg-teal-600 text-white shadow-xs'
               : 'text-slate-600 hover:text-slate-900'
@@ -255,6 +279,7 @@ export const POSBilling = ({ onOpenMedicineModal, onOpenPdfModal }) => {
           <History className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           <span>3. Billing History ({sales.length})</span>
         </button>
+      </div>
       </div>
 
       {/* VIEW 1 & 2: CATALOG & CHECKOUT SPLIT (Desktop side-by-side, mobile tabbed) */}

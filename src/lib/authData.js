@@ -79,6 +79,52 @@ export const ROLES = {
   }
 }
 
+export const STORES = {
+  UHTC: {
+    id: 'UHTC',
+    code: 'UHTC',
+    name: 'UHTC Dispensary',
+    fullName: 'Urban Health Training Centre',
+    location: 'Urban Centre (UHTC)',
+    type: 'Urban Training Centre',
+    description: 'Urban Health Training Centre Medical Store & Hospital Dispensary',
+    themeColor: 'teal',
+    badgeClass: 'bg-teal-50 text-teal-800 border-teal-300',
+    tagClass: 'bg-teal-100 text-teal-900 border-teal-300 font-bold',
+    gradient: 'from-teal-700 to-cyan-800'
+  },
+  RHTC: {
+    id: 'RHTC',
+    code: 'RHTC',
+    name: 'RHTC Dispensary',
+    fullName: 'Rural Health Training Centre',
+    location: 'Rural Centre (RHTC)',
+    type: 'Rural Training Centre',
+    description: 'Rural Health Training Centre Medical Store & Hospital Dispensary',
+    themeColor: 'emerald',
+    badgeClass: 'bg-emerald-50 text-emerald-800 border-emerald-300',
+    tagClass: 'bg-emerald-100 text-emerald-900 border-emerald-300 font-bold',
+    gradient: 'from-emerald-700 to-teal-800'
+  }
+}
+
+export const STORE_OPTIONS = [
+  {
+    id: 'UHTC',
+    code: 'UHTC',
+    label: 'UHTC (Urban Health Training Centre)',
+    shortLabel: 'UHTC Dispensary',
+    description: 'Urban Health Training Centre'
+  },
+  {
+    id: 'RHTC',
+    code: 'RHTC',
+    label: 'RHTC (Rural Health Training Centre)',
+    shortLabel: 'RHTC Dispensary',
+    description: 'Rural Health Training Centre'
+  }
+]
+
 export const INITIAL_USERS = [
   {
     id: 'user-admin',
@@ -87,6 +133,7 @@ export const INITIAL_USERS = [
     name: 'Dr. Yatish',
     role: 'admin_supervisor',
     designation: 'Chief Medical Administrator & Super Admin',
-    phone: '+91 98765 43210'
+    phone: '+91 98765 43210',
+    store: 'ALL'
   }
 ]

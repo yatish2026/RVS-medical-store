@@ -53,7 +53,7 @@ const DRUG_DICTIONARY = [
 ]
 
 export const PdfImportModal = ({ isOpen, onClose }) => {
-  const { addMedicineWithBatch, notify, canAddMedicine } = useApp()
+  const { addMedicineWithBatch, notify, canAddMedicine, effectiveStore } = useApp()
 
   const [activeTab, setActiveTab] = useState('upload') // 'upload' | 'paste'
   const [file, setFile] = useState(null)
@@ -586,16 +586,23 @@ RVS MULTI-SPECIALTY HOSPITAL • OPD PRESCRIPTION SLIP
               <FileUp className="w-5 h-5 text-indigo-300" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-lg font-black tracking-tight text-white">
                   Pharma Invoice & Prescription Medicine Extractor
                 </h2>
+                <span className={`text-[10px] font-mono font-black px-2.5 py-0.5 rounded-full border shadow-2xs ${
+                  effectiveStore === 'RHTC'
+                    ? 'bg-emerald-500/20 text-emerald-200 border-emerald-400/40'
+                    : 'bg-teal-500/20 text-teal-200 border-teal-400/40'
+                }`}>
+                  {effectiveStore === 'RHTC' ? 'Importing to: 🌿 RHTC (Rural)' : 'Importing to: 🏥 UHTC (Urban)'}
+                </span>
                 <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/30 font-mono">
                   Full 33-Item Multi-Column Extraction
                 </span>
               </div>
               <p className="text-xs text-slate-300 mt-0.5">
-                Accurately reads Product Name, Manufacturer, Batch Number, Expiry Date, Quantity, MRP & Rate.
+                Accurately reads Product Name, Manufacturer, Batch Number, Expiry Date, Quantity, MRP & Rate into {effectiveStore === 'RHTC' ? 'Rural Health Training Centre (RHTC)' : 'Urban Health Training Centre (UHTC)'}.
               </p>
             </div>
           </div>

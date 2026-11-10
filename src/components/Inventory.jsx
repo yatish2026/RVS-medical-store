@@ -36,7 +36,8 @@ export const Inventory = ({ onOpenMedicineModal, onOpenBatchModal, onEditMedicin
     canDeleteMedicine,
     canEdit,
     isReadOnly,
-    currentUser
+    currentUser,
+    effectiveStore
   } = useApp()
 
   const [searchQuery, setSearchQuery] = useState('')
@@ -73,12 +74,21 @@ export const Inventory = ({ onOpenMedicineModal, onOpenBatchModal, onEditMedicin
       {/* Header & Action Controls */}
       <div className="clinical-card p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-extrabold text-slate-900 flex items-center gap-2">
-            <Pill className="w-5 h-5 text-teal-600" />
-            Medicine Formulary & Multi-Batch Inventory
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-extrabold text-slate-900 flex items-center gap-2">
+              <Pill className="w-5 h-5 text-teal-600" />
+              <span>Medicine Formulary & Multi-Batch Inventory</span>
+            </h2>
+            <span className={`text-[11px] font-mono font-black px-2.5 py-0.5 rounded-full border shadow-2xs ${
+              effectiveStore === 'RHTC'
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                : 'bg-teal-50 text-teal-800 border-teal-300'
+            }`}>
+              {effectiveStore === 'RHTC' ? '🌿 RHTC Rural Station' : '🏥 UHTC Urban Station'}
+            </span>
+          </div>
           <p className="text-xs text-slate-500 mt-1">
-            Complete hospital pharmacy catalog with live batch-wise stock and cold-chain vault locations.
+            Displaying stock, batches, and locations registered under <strong>{effectiveStore === 'RHTC' ? 'Rural Health Training Centre (RHTC)' : 'Urban Health Training Centre (UHTC)'}</strong>.
           </p>
         </div>
 

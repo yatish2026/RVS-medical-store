@@ -170,6 +170,19 @@ def init_db():
     except Exception:
         pass
 
+    # Ensure store column exists on all tables (defaults to 'UHTC')
+    for tbl in ["users", "medicines", "batches", "patients", "suppliers", "hospital_requisitions", "sales"]:
+        try:
+            cursor.execute(f"ALTER TABLE {tbl} ADD COLUMN store TEXT DEFAULT 'UHTC'")
+        except Exception:
+            pass
+
+    # Ensure admin has store='ALL'
+    try:
+        cursor.execute("UPDATE users SET store='ALL' WHERE username='admin'")
+    except Exception:
+        pass
+
     conn.commit()
     conn.close()
 
@@ -247,7 +260,7 @@ def auth_login():
 
     # Quick preset fallback (Super Admin only)
     preset = {
-        "admin": {"name": "Dr. Yatish", "role": "admin_supervisor", "pass": "admin123"}
+        "admin": {"name": "Dr. Yatish", "role": "admin_supervisor", "pass": "admin123", "store": "ALL"}
     }
 
     if username in preset and preset[username]["pass"] == password:
@@ -257,13 +270,14 @@ def auth_login():
                 "id": f"user-{username}",
                 "username": username,
                 "name": preset[username]["name"],
-                "role": preset[username]["role"]
+                "role": preset[username]["role"],
+                "store": preset[username].get("store", "ALL")
             }
         })
 
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT id, username, name, role, designation, phone FROM users WHERE LOWER(username)=? AND password_hash=?", (username, password))
+    cursor.execute("SELECT id, username, name, role, designation, phone, store FROM users WHERE LOWER(username)=? AND password_hash=?", (username, password))
     user = cursor.fetchone()
     conn.close()
     if user:
@@ -278,31 +292,54 @@ def handle_users():
     if request.method == "POST":
         data = request.json or {}
         user_id = data.get("id") or str(uuid.uuid4())
+        store = data.get("store") or "UHTC"
         cursor.execute("""
-            INSERT OR REPLACE INTO users (id, username, password_hash, name, role, designation, phone)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT OR REPLACE INTO users (id, username, password_hash, name, role, designation, phone, store)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             user_id, data.get("username"), data.get("password") or "pass123",
-            data.get("name"), data.get("role"), data.get("designation"), data.get("phone")
+            data.get("name"), data.get("role"), data.get("designation"), data.get("phone"),
+            store
         ))
         conn.commit()
         conn.close()
-        return jsonify({"success": True, "id": user_id})
+        return jsonify({"success": True, "id": user_id, "store": store})
 
     # GET
-    cursor.execute("SELECT id, username, name, role, designation, phone, created_at FROM users ORDER BY name ASC")
+    cursor.execute("SELECT id, username, name, role, designation, phone, store, created_at FROM users ORDER BY name ASC")
     users = [dict(u) for u in cursor.fetchall()]
     conn.close()
     return jsonify(users)
 
-@app.route("/api/users/<user_id>", methods=["DELETE"])
-def delete_user(user_id):
+@app.route("/api/users/<user_id>", methods=["PUT", "DELETE"])
+def handle_single_user(user_id):
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM users WHERE id=?", (user_id,))
-    conn.commit()
+    if request.method == "DELETE":
+        cursor.execute("DELETE FROM users WHERE id=?", (user_id,))
+        conn.commit()
+        conn.close()
+        return jsonify({"success": True})
+
+    # PUT: Update user attributes (store, role, designation, etc.)
+    data = request.json or {}
+    fields = []
+    vals = []
+    for k in ["name", "role", "designation", "phone", "store", "password"]:
+        if k in data:
+            col = "password_hash" if k == "password" else k
+            fields.append(f"{col} = ?")
+            vals.append(data[k])
+
+    if fields:
+        vals.append(user_id)
+        cursor.execute(f"UPDATE users SET {', '.join(fields)} WHERE id = ?", vals)
+        conn.commit()
+
+    cursor.execute("SELECT id, username, name, role, designation, phone, store, created_at FROM users WHERE id=?", (user_id,))
+    updated_user = cursor.fetchone()
     conn.close()
-    return jsonify({"success": True})
+    return jsonify({"success": True, "user": dict(updated_user) if updated_user else None})
 
 # --- 2. MEDICINES ---
 @app.route("/api/medicines", methods=["GET", "POST"])
@@ -313,15 +350,16 @@ def handle_medicines():
         data = request.json or {}
         med_id = data.get("id") or str(uuid.uuid4())
         cursor.execute("""
-            INSERT OR REPLACE INTO medicines (id, name, generic_name, category, dosage_form, strength, manufacturer, shelf_location, min_stock_alert, prescription_required, hsn_code, gst_rate, default_discount_percent)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT OR REPLACE INTO medicines (id, name, generic_name, category, dosage_form, strength, manufacturer, shelf_location, min_stock_alert, prescription_required, hsn_code, gst_rate, default_discount_percent, store)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             med_id, data.get("name"), data.get("generic_name", ""), data.get("category", "General"),
             data.get("dosage_form", "Tablet"), data.get("strength", ""), data.get("manufacturer", ""),
             data.get("shelf_location", "Rack A-01"), int(data.get("min_stock_alert") or 20),
             1 if data.get("prescription_required", True) else 0, data.get("hsn_code", "30049099"),
             float(data.get("gst_rate") or 12.0),
-            float(data.get("default_discount_percent") or 0.0)
+            float(data.get("default_discount_percent") or 0.0),
+            data.get("store") or "UHTC"
         ))
         conn.commit()
         conn.close()
@@ -369,13 +407,14 @@ def handle_batches():
         data = request.json or {}
         batch_id = data.get("id") or str(uuid.uuid4())
         cursor.execute("""
-            INSERT OR REPLACE INTO batches (id, medicine_id, batch_number, expiry_date, cost_price, mrp, selling_price, current_stock, supplier_name)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT OR REPLACE INTO batches (id, medicine_id, batch_number, expiry_date, cost_price, mrp, selling_price, current_stock, supplier_name, store)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             batch_id, data.get("medicine_id"), data.get("batch_number"), data.get("expiry_date"),
             float(data.get("cost_price") or 0), float(data.get("mrp") or 0),
             float(data.get("selling_price") or data.get("mrp") or 0),
-            int(data.get("current_stock") or 0), data.get("supplier_name", "Primary Distributor")
+            int(data.get("current_stock") or 0), data.get("supplier_name", "Primary Distributor"),
+            data.get("store") or "UHTC"
         ))
         conn.commit()
         conn.close()
@@ -416,12 +455,13 @@ def handle_patients():
         patient_id = data.get("id") or str(uuid.uuid4())
         uhid = data.get("uhid") or f"UHID-{int(datetime.utcnow().timestamp())}"
         cursor.execute("""
-            INSERT OR REPLACE INTO patients (id, uhid, name, phone, age, gender, blood_group, doctor_name)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT OR REPLACE INTO patients (id, uhid, name, phone, age, gender, blood_group, doctor_name, store)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             patient_id, uhid, data.get("name"), data.get("phone", ""),
             int(data.get("age") or 30), data.get("gender", "Other"),
-            data.get("blood_group", "O+"), data.get("doctor_name", "Dr. On-Duty")
+            data.get("blood_group", "O+"), data.get("doctor_name", "Dr. On-Duty"),
+            data.get("store") or "UHTC"
         ))
         conn.commit()
         conn.close()
@@ -512,8 +552,8 @@ def handle_sales():
         # 1. Insert into sales
         cursor.execute("""
             INSERT INTO sales (id, invoice_number, patient_uhid, patient_name, patient_phone, doctor_name,
-            subtotal, discount_percentage, discount_amount, tax_amount, grand_total, payment_mode, billed_by, billed_by_role, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            subtotal, discount_percentage, discount_amount, tax_amount, grand_total, payment_mode, billed_by, billed_by_role, store, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             sale_id, invoice_number, data.get("patient_uhid", ""), data.get("patient_name", "Walk-in Patient"),
             data.get("patient_phone", ""), data.get("doctor_name", "Dr. On-Duty"),
@@ -521,6 +561,7 @@ def handle_sales():
             float(data.get("discount_amount") or 0), float(data.get("tax_amount") or 0),
             float(data.get("grand_total") or 0), data.get("payment_mode", "Cash"),
             data.get("billed_by", "Pharmacist"), data.get("billed_by_role", "pharmacist"),
+            data.get("store") or "UHTC",
             created_at
         ))
 
@@ -598,36 +639,36 @@ def seed_all():
         # Seed medicines
         for m in data.get("medicines", []):
             cursor.execute("""
-                INSERT OR REPLACE INTO medicines (id, name, generic_name, category, dosage_form, strength, manufacturer, shelf_location, min_stock_alert, gst_rate, default_discount_percent)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT OR REPLACE INTO medicines (id, name, generic_name, category, dosage_form, strength, manufacturer, shelf_location, min_stock_alert, gst_rate, default_discount_percent, store)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (m.get("id"), m.get("name"), m.get("generic_name", ""), m.get("category", "General"),
                   m.get("dosage_form", "Tablet"), m.get("strength", ""), m.get("manufacturer", ""),
                   m.get("shelf_location", "Rack A-01"), int(m.get("min_stock_alert") or 20), float(m.get("gst_rate") or 12.0),
-                  float(m.get("default_discount_percent") or 0.0)))
+                  float(m.get("default_discount_percent") or 0.0), m.get("store") or "UHTC"))
 
         # Seed batches
         for b in data.get("batches", []):
             cursor.execute("""
-                INSERT OR REPLACE INTO batches (id, medicine_id, batch_number, expiry_date, cost_price, mrp, selling_price, current_stock, supplier_name)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT OR REPLACE INTO batches (id, medicine_id, batch_number, expiry_date, cost_price, mrp, selling_price, current_stock, supplier_name, store)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (b.get("id"), b.get("medicine_id"), b.get("batch_number"), b.get("expiry_date"),
                   float(b.get("cost_price") or 0), float(b.get("mrp") or 0), float(b.get("selling_price") or b.get("mrp") or 0),
-                  int(b.get("current_stock") or 0), b.get("supplier_name", "Apollo Pharma")))
+                  int(b.get("current_stock") or 0), b.get("supplier_name", "Apollo Pharma"), b.get("store") or "UHTC"))
 
         # Seed patients
         for p in data.get("patients", []):
             cursor.execute("""
-                INSERT OR REPLACE INTO patients (id, uhid, name, phone, age, gender, blood_group, doctor_name)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT OR REPLACE INTO patients (id, uhid, name, phone, age, gender, blood_group, doctor_name, store)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (p.get("id"), p.get("uhid"), p.get("name"), p.get("phone", ""), int(p.get("age") or 30),
-                  p.get("gender", "Other"), p.get("blood_group", "O+"), p.get("doctor_name", "")))
+                  p.get("gender", "Other"), p.get("blood_group", "O+"), p.get("doctor_name", ""), p.get("store") or "UHTC"))
 
         # Seed suppliers
         for s in data.get("suppliers", []):
             cursor.execute("""
-                INSERT OR REPLACE INTO suppliers (id, name, company_name, phone, gstin, balance_payable)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """, (s.get("id"), s.get("name"), s.get("company_name"), s.get("phone"), s.get("gstin", ""), float(s.get("balance_payable") or 0)))
+                INSERT OR REPLACE INTO suppliers (id, name, company_name, phone, gstin, balance_payable, store)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (s.get("id"), s.get("name"), s.get("company_name"), s.get("phone"), s.get("gstin", ""), float(s.get("balance_payable") or 0), s.get("store") or "UHTC"))
 
         conn.commit()
         conn.close()

@@ -235,6 +235,16 @@ export const apiCreateUser = async (userData) => {
   return await res.json()
 }
 
+export const apiUpdateUser = async (id, userData) => {
+  const res = await fetch(getUrl(`/api/users/${id}`), {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(userData)
+  })
+  if (!res.ok) throw new Error('Failed to update user')
+  return await res.json()
+}
+
 export const apiDeleteUser = async (id) => {
   const res = await fetch(getUrl(`/api/users/${id}`), {
     method: 'DELETE'

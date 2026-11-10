@@ -23,7 +23,9 @@ import {
   Check,
   Trash2,
   ShieldCheck,
-  Lock
+  Lock,
+  Building2,
+  Repeat
 } from 'lucide-react'
 
 export const Dashboard = ({ onOpenMedicineModal, onOpenPatientModal, onOpenBatchModal, onOpenRevenueAnalytics }) => {
@@ -44,7 +46,11 @@ export const Dashboard = ({ onOpenMedicineModal, onOpenPatientModal, onOpenBatch
     isReadOnly,
     currentUser,
     currentRole,
-    preApprovedDiscount
+    preApprovedDiscount,
+    effectiveStore,
+    currentStore,
+    switchStore,
+    isSuperAdmin
   } = useApp()
 
   const isMoOrAdmin = currentUser?.role === 'admin_supervisor' || currentUser?.role === 'doctor_mo'
@@ -73,19 +79,33 @@ export const Dashboard = ({ onOpenMedicineModal, onOpenPatientModal, onOpenBatch
             <div className="space-y-1.5">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 border border-white/20 text-white text-xs font-semibold backdrop-blur-xs">
                 <span className="w-2 h-2 rounded-full bg-emerald-300 animate-pulse"></span>
-                RVS Hospital & Medical Center • Central Pharmacy
+                <span>RVS Hospital & Medical Center • </span>
+                <strong className="font-black text-emerald-200">
+                  {effectiveStore === 'RHTC' ? 'RHTC (Rural Centre)' : 'UHTC (Urban Centre)'} Dispensary
+                </strong>
               </div>
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-white leading-tight">
-                Pharmacy Operations & Real-Time Stock Hub
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-white leading-tight flex flex-wrap items-center gap-2">
+                <span>{effectiveStore} Dispensary Stock & Operations Hub</span>
               </h1>
               <p className="text-teal-50 text-xs sm:text-sm max-w-2xl leading-relaxed">
-                Real-time monitoring of <strong className="text-white font-bold">{medicines.length} formulations</strong> across <strong className="text-white font-bold">{batches.length} active batches</strong> with automated expiry reminders and high-speed billing.
+                Live monitoring for <strong className="text-white font-bold">{effectiveStore === 'RHTC' ? 'Rural Health Training Centre (RHTC)' : 'Urban Health Training Centre (UHTC)'}</strong>: <strong className="text-white font-bold">{medicines.length} formulations</strong> across <strong className="text-white font-bold">{batches.length} batches</strong>.
               </p>
             </div>
           </div>
 
           {/* Quick Actions */}
           <div className="flex flex-wrap items-center gap-2.5">
+            {isSuperAdmin && (
+              <button
+                onClick={() => switchStore(currentStore === 'UHTC' ? 'RHTC' : 'UHTC')}
+                className="flex items-center gap-2 bg-purple-900/80 hover:bg-purple-900 text-white font-black px-4 sm:px-5 py-3 rounded-xl text-xs sm:text-sm border border-purple-300/40 shadow-md active:scale-95 transition-all cursor-pointer"
+                title={`Switch active context to ${currentStore === 'UHTC' ? 'RHTC' : 'UHTC'}`}
+              >
+                <Repeat className="w-4 h-4 text-purple-200" />
+                <span>Switch to {currentStore === 'UHTC' ? 'RHTC (Rural)' : 'UHTC (Urban)'}</span>
+              </button>
+            )}
+
             <button
               onClick={() => setActiveTab('pos')}
               className="flex items-center gap-2 bg-white hover:bg-slate-50 text-teal-900 font-extrabold px-4 sm:px-5 py-3 rounded-xl text-xs sm:text-sm shadow-md active:scale-95 transition-all cursor-pointer"
