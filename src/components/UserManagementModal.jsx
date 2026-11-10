@@ -601,10 +601,3 @@ export const UserManagementModal = () => {
     </div>
   )
 }
-          </button >
-        </div >
-
-      </div >
-    </div >
-  )
-}
