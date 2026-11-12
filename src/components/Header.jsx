@@ -10,9 +10,7 @@ import {
   Clock,
   ShieldCheck,
   LogOut,
-  FileUp,
-  Building2,
-  Lock
+  FileUp
 } from 'lucide-react'
 
 export const Header = ({ onOpenMedicineModal, onOpenPatientModal, onOpenPdfModal, onToggleMobileMenu, isMobileMenuOpen }) => {
@@ -85,59 +83,6 @@ export const Header = ({ onOpenMedicineModal, onOpenPatientModal, onOpenPdfModal
                   <span className="truncate font-bold text-slate-700">{effectiveStore} Dispensary</span>
                 </p>
               </div>
-            </div>
-
-            {/* Store Switcher (Super Admin) or Store Badge (Staff Member) */}
-            <div className="hidden sm:flex items-center ml-1 sm:ml-2">
-              {isSuperAdmin ? (
-                <div className="flex items-center bg-slate-100 p-0.5 sm:p-1 rounded-2xl border border-slate-200/90 shadow-2xs">
-                  <span className="hidden xl:inline-block text-[10px] font-black uppercase font-mono text-slate-500 px-2">
-                    Store:
-                  </span>
-                  <button
-                    onClick={() => switchStore('UHTC')}
-                    className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                      currentStore === 'UHTC'
-                        ? 'bg-gradient-to-r from-teal-600 to-cyan-700 text-white shadow-xs'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/70'
-                    }`}
-                    title="Switch to UHTC Dispensary (Urban Health Training Centre)"
-                  >
-                    <Building2 className="w-3.5 h-3.5" />
-                    <span>UHTC</span>
-                    <span className="hidden md:inline text-[10px] font-medium opacity-90">(Urban)</span>
-                  </button>
-
-                  <button
-                    onClick={() => switchStore('RHTC')}
-                    className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                      currentStore === 'RHTC'
-                        ? 'bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-xs'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/70'
-                    }`}
-                    title="Switch to RHTC Dispensary (Rural Health Training Centre)"
-                  >
-                    <Building2 className="w-3.5 h-3.5" />
-                    <span>RHTC</span>
-                    <span className="hidden md:inline text-[10px] font-medium opacity-90">(Rural)</span>
-                  </button>
-                </div>
-              ) : (
-                <div
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-extrabold shadow-2xs ${
-                    effectiveStore === 'RHTC'
-                      ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                      : 'bg-teal-50 text-teal-800 border-teal-300'
-                  }`}
-                  title={`Assigned Dispensary: ${effectiveStore === 'RHTC' ? 'Rural Health Training Centre (RHTC)' : 'Urban Health Training Centre (UHTC)'}. Access is restricted to this store.`}
-                >
-                  <Lock className="w-3 h-3 text-slate-400" />
-                  <span>{effectiveStore} Dispensary</span>
-                  <span className="hidden md:inline text-[10px] font-medium opacity-80">
-                    ({effectiveStore === 'RHTC' ? 'Rural' : 'Urban'})
-                  </span>
-                </div>
-              )}
             </div>
           </div>
 
