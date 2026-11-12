@@ -52,6 +52,47 @@ const DRUG_DICTIONARY = [
   { name: 'Ringer Lactate (RL)', form: 'IV Infusion', category: 'IV Fluids & Infusions', defaultStrength: '500ml', mrp: 55, hsn: '30049099' }
 ]
 
+// Recognized hospital medicine categories for catalog matching
+const KNOWN_CATEGORIES = [
+  'Preanaesthetic medications',
+  'Anaesthetics',
+  'NSAIDS',
+  'Analgesics & Antipyretics',
+  'Analgesics',
+  'Antibiotics',
+  'Antidiabetic',
+  'Cardiovascular',
+  'Gastrointestinal & Antacids',
+  'Gastrointestinal',
+  'Antacids',
+  'Antiemetics',
+  'Respiratory & Antiallergic',
+  'Respiratory',
+  'Antiallergic',
+  'Antihistamines',
+  'Critical Care & Injections',
+  'IV Fluids & Infusions',
+  'IV Fluids',
+  'Vitamins & Supplements',
+  'Vitamins',
+  'Medical Consumables & Surgical',
+  'Medical Consumable',
+  'Dermatological',
+  'Ophthalmological',
+  'Antifungal',
+  'Antiviral',
+  'Antiparasitic',
+  'Corticosteroids',
+  'Hormones',
+  'Muscle Relaxants',
+  'Sedatives',
+  'Neurological',
+  'Psychiatric',
+  'Endocrine',
+  'General Formulary',
+  'General'
+]
+
 export const PdfImportModal = ({ isOpen, onClose }) => {
   const { addMedicineWithBatch, notify, canAddMedicine, effectiveStore } = useApp()
 
@@ -63,6 +104,12 @@ export const PdfImportModal = ({ isOpen, onClose }) => {
   const [isImporting, setIsImporting] = useState(false)
   const [parseSummary, setParseSummary] = useState(null)
   const [dragOver, setDragOver] = useState(false)
+
+  // Bulk quick-fill state (optional tool for pharmacists/admins)
+  const [bulkExpiry, setBulkExpiry] = useState('')
+  const [bulkStock, setBulkStock] = useState('')
+  const [bulkMrp, setBulkMrp] = useState('')
+  const [bulkBatch, setBulkBatch] = useState('')
 
   const fileInputRef = useRef(null)
 
@@ -204,54 +251,157 @@ export const PdfImportModal = ({ isOpen, onClose }) => {
     }
   }
 
-  // --- GENERAL PRESCRIPTION LINE PARSER ---
+  // --- 1. DRUG FORMULARY / TENDER CATALOG LIST PARSER (e.g. user's druglist.pdf: Sl No + Drug Name + Category) ---
+  const parseDrugListLine = (line, index) => {
+    const clean = line.trim()
+    if (!clean || clean.length < 3) return null
+    // Skip headers & document titles
+    if (/^(drug list|sl\.?\s*no|sr\.?\s*no|s\.no|serial|category|product name|medicine name|table of|page \d+)/i.test(clean)) return null
+
+    let sn = `${index + 1}`
+    let rest = clean
+
+    // 1. Extract and strip Serial Number at start if present (e.g. "7 Midazolam..." -> sn: "7", rest: "Midazolam...")
+    const snMatch = clean.match(/^(\d{1,4})[\.\)\-\:\s\t\|]+(.*)/)
+    if (snMatch) {
+      sn = snMatch[1]
+      rest = snMatch[2].trim()
+    } else {
+      // If no leading serial number, check if line looks like a medicine name or formulation
+      const hasDrugPattern = /\b(?:tab|tablet|cap|capsule|inj|injection|syr|syrup|ointment|gel|cream|drops|spray|suppository|iv|fluid|infusion|solution|susp|respu|mg|ml|gm|mcg|iu|%)\b/i.test(clean)
+      if (!hasDrugPattern && clean.length > 60) return null
+    }
+
+    if (!rest || rest.length < 2) return null
+
+    // 2. Extract Category
+    let category = ''
+    if (rest.includes('\t') || rest.includes('|')) {
+      const parts = rest.split(/[\t\|]+/).map(p => p.trim()).filter(Boolean)
+      if (parts.length >= 2) {
+        rest = parts[0]
+        category = parts[parts.length - 1]
+      }
+    } else {
+      // Check known categories at the end of text
+      for (const cat of KNOWN_CATEGORIES) {
+        if (rest.toLowerCase().endsWith(cat.toLowerCase())) {
+          category = cat
+          rest = rest.substring(0, rest.length - cat.length).trim()
+          break
+        }
+      }
+    }
+
+    // Clean trailing punctuation or separators from drug name
+    let drugName = rest.replace(/[,\-\:\s\t\|]+$/, '').trim()
+    if (!drugName || drugName.length < 2) return null
+
+    // 3. Determine Dosage Form accurately
+    let form = 'Tablet'
+    if (/\b(?:inj|injection|vial|ampoule)\b/i.test(drugName)) form = 'Injection'
+    else if (/\b(?:ointment|cream|gel|jelly)\b/i.test(drugName)) form = 'Ointment'
+    else if (/\b(?:nasal spray|spray)\b/i.test(drugName)) form = 'Spray'
+    else if (/\b(?:suppository)\b/i.test(drugName)) form = 'Suppository'
+    else if (/\b(?:drops|eye drops|ear drops)\b/i.test(drugName)) form = 'Drops'
+    else if (/\b(?:syr|syrup|susp|suspension)\b/i.test(drugName)) form = 'Syrup'
+    else if (/\b(?:cap|capsule|caps)\b/i.test(drugName)) form = 'Capsule'
+    else if (/\b(?:iv|infusion|dns|ns|rl|dextrose)\b/i.test(drugName)) form = 'IV Infusion'
+    else if (/\b(?:sol|solution|mouthwash|lotion|spirit)\b/i.test(drugName)) form = 'Solution'
+    else if (/\b(?:inhaler|respules|rotacaps)\b/i.test(drugName)) form = 'Respules / Inhalation'
+    else if (/\b(?:tab|tablet|tabs)\b/i.test(drugName)) form = 'Tablet'
+
+    // 4. Default Category fallback if not explicitly stated in document
+    if (!category) {
+      if (/antibiotic|alcipro|ceftriaxone|augmentin|aziwok|amoxicillin|cipro/i.test(drugName)) category = 'Antibiotics'
+      else if (/paracetamol|dolo|diclo|voveran|pain|analgesic|nsaid/i.test(drugName)) category = 'NSAIDS'
+      else if (/pantoprazole|pan|rabeprazole|omeprazole|antacid|sporlac/i.test(drugName)) category = 'Gastrointestinal & Antacids'
+      else if (/metformin|glycomet|insulin|glimepiride/i.test(drugName)) category = 'Antidiabetic'
+      else if (/amlodipine|telmisartan|atorvastatin|cardio/i.test(drugName)) category = 'Cardiovascular'
+      else if (/iv|infusion|dns|ns|rl|dextrose/i.test(drugName)) category = 'IV Fluids & Infusions'
+      else if (/lignocaine|prilocaine|anaesth/i.test(drugName)) category = 'Anaesthetics'
+      else if (/midazolam|alprazolam|amitriptyline/i.test(drugName)) category = 'Preanaesthetic medications'
+      else category = 'General Formulary'
+    }
+
+    // 5. DO NOT INVENT DATA: Keep batch, expiry, quantity, rate, and MRP blank!
+    return {
+      id: `cat-${Date.now()}-${sn}`,
+      sn,
+      name: drugName,
+      generic_name: drugName,
+      manufacturer: 'Hospital Formulary',
+      pack: '',
+      batch_number: '',
+      current_stock: '',
+      expiry_date: '',
+      mrp: '',
+      cost_price: '',
+      selling_price: '',
+      hsn_code: '30049099',
+      gst_rate: 12.0,
+      dosage_form: form,
+      category,
+      shelf_location: 'Dispensary Shelf',
+      supplier_name: 'Hospital Formulary Inward'
+    }
+  }
+
+  // --- 2. GENERAL PRESCRIPTION LINE PARSER ---
   const parsePrescriptionLine = (line, index) => {
     const trimmed = line.trim()
     if (!trimmed || trimmed.length < 3) return null
+    if (/^(prescription|rx|patient|doctor|invoice|hospital|date|total|bill|phone|address)/i.test(trimmed)) return null
+
+    let clean = trimmed
+    let sn = `${index + 1}`
+    const snMatch = trimmed.match(/^(\d{1,4})[\.\)\-\:\s\t\|]+(.*)/)
+    if (snMatch) {
+      sn = snMatch[1]
+      clean = snMatch[2].trim()
+    }
 
     let matched = null
     for (const drug of DRUG_DICTIONARY) {
       const regex = new RegExp(`\\b${drug.name.replace(/\+/g, '\\+')}\\b`, 'i')
-      if (regex.test(trimmed)) {
+      if (regex.test(clean)) {
         matched = drug
         break
       }
     }
 
     const medPattern = /(?:(?:Tab|Cap|Inj|Syr|Drops|Oint)\.?\s+)?([A-Za-z0-9\s\+\-\/]+?)(?:\s+(\d+(?:\.\d+)?\s*(?:mg|ml|gm|mcg|iu|%)))/i
-    const regexMatch = trimmed.match(medPattern)
+    const regexMatch = clean.match(medPattern)
 
     let medName = ''
-    let strength = '500mg'
+    let strength = ''
     let form = 'Tablet'
     let category = 'General Formulary'
-    let mrp = 50.0
 
     if (matched) {
       medName = matched.name
       strength = matched.defaultStrength
       form = matched.form
       category = matched.category
-      mrp = matched.mrp
     } else if (regexMatch && regexMatch[1] && regexMatch[1].trim().length > 3) {
       const candidate = regexMatch[1].trim()
       if (!/^(patient|doctor|invoice|hospital|date|total|bill|phone|address)/i.test(candidate)) {
         medName = candidate
-        strength = regexMatch[2]?.trim() || '500mg'
-        if (/inj|injection/i.test(trimmed)) form = 'Injection'
-        else if (/cap|capsule/i.test(trimmed)) form = 'Capsule'
-        else if (/syr|syrup/i.test(trimmed)) form = 'Syrup'
+        strength = regexMatch[2]?.trim() || ''
+        if (/inj|injection/i.test(clean)) form = 'Injection'
+        else if (/cap|capsule/i.test(clean)) form = 'Capsule'
+        else if (/syr|syrup/i.test(clean)) form = 'Syrup'
       }
     }
 
     if (!medName) return null
 
-    // Extract Batch & Expiry if present
-    const batchMatch = trimmed.match(/(?:batch|b\.?no|lot)[\s\:\-]+([A-Za-z0-9\-]+)/i)
-    const batchNo = batchMatch ? batchMatch[1].toUpperCase() : `RX-${Math.floor(1000 + Math.random() * 9000)}`
+    // Extract Batch & Expiry ONLY IF EXPLICITLY IN TEXT — NEVER INVENT
+    const batchMatch = clean.match(/(?:batch|b\.?no|lot)[\s\:\-]+([A-Za-z0-9\-]+)/i)
+    const batchNo = batchMatch ? batchMatch[1].toUpperCase() : ''
 
-    const expMatch = trimmed.match(/(?:exp|expiry)[\s\:\-]+(\d{1,2}[\/\-]\d{2,4}|\d{4}[\/\-]\d{2})/i)
-    let expiryDate = '2028-06-30'
+    const expMatch = clean.match(/(?:exp|expiry)[\s\:\-]+(\d{1,2}[\/\-]\d{2,4}|\d{4}[\/\-]\d{2})/i)
+    let expiryDate = ''
     if (expMatch) {
       const val = expMatch[1]
       if (val.includes('/')) {
@@ -261,49 +411,66 @@ export const PdfImportModal = ({ isOpen, onClose }) => {
           const mo = parts[0].padStart(2, '0')
           expiryDate = `${yr}-${mo}-28`
         }
+      } else if (val.includes('-')) {
+        expiryDate = val
       }
     }
 
-    const qtyMatch = trimmed.match(/(\d+)\s*(?:tabs|tablets|caps|strips|vials|bottles|pcs)/i)
-    const qty = qtyMatch ? parseInt(qtyMatch[1], 10) : 30
+    const qtyMatch = clean.match(/(\d+)\s*(?:tabs|tablets|caps|strips|vials|bottles|pcs)/i)
+    const qty = qtyMatch ? parseInt(qtyMatch[1], 10) : ''
+
+    // MRP & Rate ONLY IF EXPLICITLY IN TEXT — NEVER INVENT
+    const mrpMatch = clean.match(/(?:rs\.?|inr|mrp)[\s\:\-]+(\d+(?:\.\d+)?)/i)
+    const mrp = mrpMatch ? parseFloat(mrpMatch[1]) : ''
+    const costPrice = mrp !== '' ? parseFloat((mrp * 0.75).toFixed(2)) : ''
 
     return {
       id: `rx-${Date.now()}-${index}`,
-      sn: `${index + 1}`,
+      sn,
       name: medName,
       generic_name: medName,
       manufacturer: 'Prescribed Brand',
-      pack: `${strength}`,
+      pack: strength,
       batch_number: batchNo,
       current_stock: qty,
       expiry_date: expiryDate,
-      mrp,
-      cost_price: parseFloat((mrp * 0.75).toFixed(2)),
+      mrp: mrp,
+      cost_price: costPrice,
       selling_price: mrp,
       hsn_code: '30049099',
       gst_rate: 12.0,
       dosage_form: form,
       category,
-      shelf_location: 'Dispensary Shelf A',
+      shelf_location: 'Dispensary Shelf',
       supplier_name: 'OPD Hospital Prescriptions'
     }
   }
 
-  // Master Parser: Evaluates Invoice format first, falls back to Prescription format
+  // Master Parser: Evaluates Wholesale Invoice first, then Drug Formulary Catalog, then Prescription format
   const parseMedicalText = (text) => {
     const lines = text.split(/\r?\n/)
-    const invoiceResults = []
 
+    // 1. Try Wholesale GST Invoice (multi-column: MFR, Batch, Exp, Qty, Rate, MRP)
+    const invoiceResults = []
     for (const line of lines) {
       const item = parsePharmaInvoiceLine(line)
       if (item) invoiceResults.push(item)
     }
-
     if (invoiceResults.length >= 3) {
       return invoiceResults
     }
 
-    // Prescription fallback
+    // 2. Try Drug Formulary / Tender Catalog List (e.g. Sl No + Drug Name + Category like user's druglist.pdf)
+    const drugListResults = []
+    lines.forEach((line, idx) => {
+      const item = parseDrugListLine(line, idx)
+      if (item) drugListResults.push(item)
+    })
+    if (drugListResults.length >= 2) {
+      return drugListResults
+    }
+
+    // 3. Fallback to Prescription format
     const rxResults = []
     lines.forEach((line, idx) => {
       const item = parsePrescriptionLine(line, idx)
@@ -312,7 +479,7 @@ export const PdfImportModal = ({ isOpen, onClose }) => {
       }
     })
 
-    return rxResults.length > 0 ? rxResults : invoiceResults
+    return rxResults.length > 0 ? rxResults : (invoiceResults.length > 0 ? invoiceResults : drugListResults)
   }
 
   // --- EXTRACT TEXT FROM PDF / FILE ---
@@ -405,7 +572,12 @@ export const PdfImportModal = ({ isOpen, onClose }) => {
       const parsed = parseMedicalText(textContent)
 
       if (parsed.length > 0) {
-        notify('Extraction Complete', `Extracted ${parsed.length} medicines, exact batches, expiry dates & prices!`, 'success')
+        const hasPricesOrBatches = parsed.some(p => p.mrp > 0 || p.batch_number)
+        if (hasPricesOrBatches) {
+          notify('Extraction Complete', `Extracted ${parsed.length} medicines with verified batches, expiry dates & prices!`, 'success')
+        } else {
+          notify('Catalog Extracted', `Extracted ${parsed.length} medicines & categories! (Pricing, batches, and expiry left blank as in document).`, 'success')
+        }
       } else {
         notify('Notice', 'No structured medicine rows found. You can paste the invoice text in the paste tab.', 'info')
       }
@@ -515,6 +687,32 @@ RVS MULTI-SPECIALTY HOSPITAL • OPD PRESCRIPTION SLIP
     setExtractedMedicines(prev => prev.filter((_, i) => i !== index))
   }
 
+  // Bulk Apply Helpers
+  const handleApplyBulkToBlankOnly = (field, value) => {
+    if (value === undefined || value === null || value === '') return
+    setExtractedMedicines(prev => prev.map(item => {
+      const current = item[field]
+      if (current === '' || current === undefined || current === null || current === 0) {
+        return { ...item, [field]: value }
+      }
+      return item
+    }))
+    notify('Bulk Applied', `Filled blank entries for ${field} across all medicines.`, 'info')
+  }
+
+  const handleClearAllPricesAndBatches = () => {
+    setExtractedMedicines(prev => prev.map(item => ({
+      ...item,
+      batch_number: '',
+      expiry_date: '',
+      current_stock: '',
+      cost_price: '',
+      mrp: '',
+      selling_price: ''
+    })))
+    notify('Reset to Blank', 'All batch numbers, expiry dates, quantities, and prices cleared to blank.', 'info')
+  }
+
   // --- 1-CLICK IMPORT TO DISPENSARY FORMULARY ---
   const handleImportAll = async () => {
     if (extractedMedicines.length === 0) {
@@ -528,27 +726,37 @@ RVS MULTI-SPECIALTY HOSPITAL • OPD PRESCRIPTION SLIP
     try {
       for (const item of extractedMedicines) {
         const medPayload = {
-          name: item.name,
-          generic_name: item.generic_name || item.name,
+          name: (item.name || '').trim(),
+          generic_name: item.generic_name || (item.name || '').trim(),
           category: item.category || 'General Formulary',
           dosage_form: item.dosage_form || 'Tablet',
-          strength: item.pack || 'Standard',
-          manufacturer: item.manufacturer || 'Pharma Supplier',
+          strength: item.pack || item.strength || '',
+          manufacturer: item.manufacturer || 'Hospital Formulary',
           shelf_location: item.shelf_location || 'Rack A-01',
           min_stock_alert: 20,
           prescription_required: true,
           hsn_code: item.hsn_code || '30049099',
-          gst_rate: parseFloat(item.gst_rate) || 5.0
+          gst_rate: parseFloat(item.gst_rate) || 12.0
         }
 
-        const batchPayload = {
-          batch_number: item.batch_number,
-          expiry_date: item.expiry_date,
-          cost_price: parseFloat(item.cost_price) || 0,
-          mrp: parseFloat(item.mrp) || 0,
-          selling_price: parseFloat(item.selling_price) || parseFloat(item.mrp) || 0,
-          current_stock: parseInt(item.current_stock, 10) || 0,
-          supplier_name: item.supplier_name || 'V KAN PHARMA SOLUTIONS'
+        const batchNum = (item.batch_number || '').trim()
+        const expDate = (item.expiry_date || '').trim()
+        const stock = item.current_stock === '' || isNaN(parseInt(item.current_stock, 10)) ? 0 : parseInt(item.current_stock, 10)
+        const cost = item.cost_price === '' || isNaN(parseFloat(item.cost_price)) ? 0 : parseFloat(item.cost_price)
+        const mrpVal = item.mrp === '' || isNaN(parseFloat(item.mrp)) ? 0 : parseFloat(item.mrp)
+
+        let batchPayload = null
+        // Attach batch ONLY if the user entered batch or pricing/stock details
+        if (batchNum || expDate || stock > 0 || cost > 0 || mrpVal > 0) {
+          batchPayload = {
+            batch_number: batchNum,
+            expiry_date: expDate,
+            cost_price: cost,
+            mrp: mrpVal,
+            selling_price: parseFloat(item.selling_price) || mrpVal || cost,
+            current_stock: stock,
+            supplier_name: item.supplier_name || 'Hospital Inward'
+          }
         }
 
         await addMedicineWithBatch(medPayload, batchPayload)
@@ -562,8 +770,8 @@ RVS MULTI-SPECIALTY HOSPITAL • OPD PRESCRIPTION SLIP
       })
 
       notify(
-        'All 33 Medicines Imported!',
-        `Successfully added ${addedCount} medicines with verified batches & expiry dates into your medicine list!`,
+        'Medicines Imported!',
+        `Successfully added ${addedCount} medicines into your ${effectiveStore} formulary catalog!`,
         'success'
       )
       onClose()
@@ -730,29 +938,97 @@ RVS MULTI-SPECIALTY HOSPITAL • OPD PRESCRIPTION SLIP
 
           {/* STATUS BANNER */}
           {parseSummary && (
-            <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 flex flex-wrap items-center justify-between gap-3 text-xs">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span className="font-extrabold text-emerald-900">
-                  Successfully Extracted {extractedMedicines.length} Medicines with Verified Batches & Expiry Dates!
-                </span>
-                <span className="text-[10px] text-emerald-700 font-mono">({parseSummary.fileName})</span>
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-xs">
+              <div className="flex items-start sm:items-center gap-2.5">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5 sm:mt-0" />
+                <div>
+                  <div className="font-extrabold text-emerald-950 flex flex-wrap items-center gap-2">
+                    <span>Extracted {extractedMedicines.length} Medicines from {parseSummary.fileName}</span>
+                    <span className="text-[10px] text-emerald-700 font-mono bg-emerald-100/80 px-2 py-0.5 rounded-full border border-emerald-200">
+                      {parseSummary.fileSize}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-emerald-700 mt-0.5 font-medium">
+                    {extractedMedicines.some(m => m.mrp > 0 || m.batch_number)
+                      ? 'Wholesale invoice prices, batches, and expiry dates extracted accurately.'
+                      : 'Formulary list detected without prices or expiry dates. All fields left blank so you can enter actual details or catalog directly.'}
+                  </p>
+                </div>
               </div>
-              <span className="text-xs font-mono text-emerald-800 font-bold">
-                Total Inward Units: {extractedMedicines.reduce((acc, m) => acc + (m.current_stock || 0), 0)} Qty
-              </span>
+
+              <div className="flex items-center gap-3 shrink-0 self-end sm:self-center font-mono">
+                <span className="text-xs bg-white text-emerald-900 font-black px-3 py-1.5 rounded-xl border border-emerald-200 shadow-2xs">
+                  Inward Stock: {extractedMedicines.reduce((acc, m) => acc + (parseInt(m.current_stock, 10) || 0), 0)} Units
+                </span>
+              </div>
             </div>
           )}
 
           {/* EXTRACTED MEDICINES TABLE */}
           {extractedMedicines.length > 0 && (
-            <div className="space-y-2">
+            <div className="space-y-3">
+              
+              {/* Optional Quick Bulk Toolbar */}
+              <div className="p-3 rounded-2xl bg-slate-100/90 border border-slate-200 flex flex-wrap items-center justify-between gap-2.5 text-xs">
+                <div className="flex items-center gap-2 text-slate-800 font-extrabold">
+                  <Sparkles className="w-4 h-4 text-indigo-600" />
+                  <span>Quick Multi-Row Fill (Optional):</span>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <div className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-xl border border-slate-300">
+                    <span className="text-[10px] text-slate-500 font-mono font-bold">Expiry for Blanks:</span>
+                    <input
+                      type="date"
+                      value={bulkExpiry}
+                      onChange={(e) => setBulkExpiry(e.target.value)}
+                      className="text-xs font-mono outline-hidden text-slate-800"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleApplyBulkToBlankOnly('expiry_date', bulkExpiry)}
+                      className="px-2 py-0.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-[10px] font-bold cursor-pointer transition-colors"
+                    >
+                      Fill
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-xl border border-slate-300">
+                    <span className="text-[10px] text-slate-500 font-mono font-bold">Qty for Blanks:</span>
+                    <input
+                      type="number"
+                      placeholder="e.g. 50"
+                      value={bulkStock}
+                      onChange={(e) => setBulkStock(e.target.value)}
+                      className="w-16 text-xs font-mono outline-hidden text-slate-800"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleApplyBulkToBlankOnly('current_stock', bulkStock)}
+                      className="px-2 py-0.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-[10px] font-bold cursor-pointer transition-colors"
+                    >
+                      Fill
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleClearAllPricesAndBatches}
+                    className="px-2.5 py-1 bg-white hover:bg-rose-50 text-rose-700 hover:text-rose-800 border border-slate-300 hover:border-rose-300 rounded-xl text-[11px] font-bold cursor-pointer transition-colors flex items-center gap-1"
+                    title="Clear all batches, expiry dates, stock quantities, and rates to empty"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                    <span>Clear All to Blank</span>
+                  </button>
+                </div>
+              </div>
+
               <div className="flex items-center justify-between">
                 <span className="text-xs font-black uppercase font-mono text-slate-700 tracking-wider">
                   Extracted Formulary & Inward Stock Table ({extractedMedicines.length} items)
                 </span>
                 <span className="text-xs text-slate-500 font-mono">
-                  You can edit any quantity, price, or batch below before saving
+                  Enter or edit any details below before clicking Import
                 </span>
               </div>
 
@@ -764,6 +1040,7 @@ RVS MULTI-SPECIALTY HOSPITAL • OPD PRESCRIPTION SLIP
                         <th className="px-3 py-2.5 font-bold">#</th>
                         <th className="px-3 py-2.5 font-bold">MFR</th>
                         <th className="px-3 py-2.5 font-bold">Product Name</th>
+                        <th className="px-3 py-2.5 font-bold">Category</th>
                         <th className="px-3 py-2.5 font-bold">Dosage Form</th>
                         <th className="px-3 py-2.5 font-bold">Batch No</th>
                         <th className="px-3 py-2.5 font-bold">Expiry Date</th>
@@ -782,7 +1059,7 @@ RVS MULTI-SPECIALTY HOSPITAL • OPD PRESCRIPTION SLIP
                           {/* Manufacturer */}
                           <td className="px-3 py-2">
                             <span className="px-1.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-[10px] font-bold font-mono text-slate-700 whitespace-nowrap">
-                              {item.manufacturer}
+                              {item.manufacturer || 'Formulary'}
                             </span>
                           </td>
 
@@ -793,6 +1070,17 @@ RVS MULTI-SPECIALTY HOSPITAL • OPD PRESCRIPTION SLIP
                               value={item.name}
                               onChange={(e) => handleUpdateItem(idx, 'name', e.target.value)}
                               className="w-full px-2 py-1 rounded-lg border border-slate-200 text-xs font-bold text-slate-900 focus:border-indigo-500 outline-hidden"
+                            />
+                          </td>
+
+                          {/* Category */}
+                          <td className="px-3 py-2 min-w-[140px]">
+                            <input
+                              type="text"
+                              value={item.category || ''}
+                              onChange={(e) => handleUpdateItem(idx, 'category', e.target.value)}
+                              placeholder="General"
+                              className="w-full px-2 py-1 rounded-lg border border-slate-200 text-[11px] font-bold text-slate-700 focus:border-indigo-500 outline-hidden bg-slate-50/50"
                             />
                           </td>
 
@@ -807,9 +1095,10 @@ RVS MULTI-SPECIALTY HOSPITAL • OPD PRESCRIPTION SLIP
                           <td className="px-3 py-2">
                             <input
                               type="text"
-                              value={item.batch_number}
+                              value={item.batch_number || ''}
+                              placeholder="—"
                               onChange={(e) => handleUpdateItem(idx, 'batch_number', e.target.value.toUpperCase())}
-                              className="w-28 px-2 py-1 rounded-lg border border-slate-200 font-mono text-xs font-bold text-slate-800 outline-hidden bg-slate-50/50"
+                              className="w-24 px-2 py-1 rounded-lg border border-slate-200 font-mono text-xs font-bold text-slate-800 outline-hidden bg-slate-50/50 focus:bg-white focus:border-indigo-500"
                             />
                           </td>
 
@@ -817,9 +1106,9 @@ RVS MULTI-SPECIALTY HOSPITAL • OPD PRESCRIPTION SLIP
                           <td className="px-3 py-2">
                             <input
                               type="date"
-                              value={item.expiry_date}
+                              value={item.expiry_date || ''}
                               onChange={(e) => handleUpdateItem(idx, 'expiry_date', e.target.value)}
-                              className="w-32 px-2 py-1 rounded-lg border border-slate-200 font-mono text-xs text-slate-800 outline-hidden"
+                              className="w-32 px-2 py-1 rounded-lg border border-slate-200 font-mono text-xs text-slate-800 outline-hidden focus:border-indigo-500 bg-white"
                             />
                           </td>
 
@@ -827,10 +1116,11 @@ RVS MULTI-SPECIALTY HOSPITAL • OPD PRESCRIPTION SLIP
                           <td className="px-3 py-2">
                             <input
                               type="number"
-                              min="1"
-                              value={item.current_stock}
-                              onChange={(e) => handleUpdateItem(idx, 'current_stock', parseInt(e.target.value, 10) || 0)}
-                              className="w-16 px-2 py-1 rounded-lg border border-slate-200 font-mono text-xs font-black text-teal-700 outline-hidden"
+                              min="0"
+                              value={item.current_stock ?? ''}
+                              placeholder="0"
+                              onChange={(e) => handleUpdateItem(idx, 'current_stock', e.target.value)}
+                              className="w-16 px-2 py-1 rounded-lg border border-slate-200 font-mono text-xs font-black text-teal-700 outline-hidden focus:border-indigo-500 bg-white"
                             />
                           </td>
 
@@ -839,9 +1129,11 @@ RVS MULTI-SPECIALTY HOSPITAL • OPD PRESCRIPTION SLIP
                             <input
                               type="number"
                               step="0.5"
-                              value={item.cost_price}
-                              onChange={(e) => handleUpdateItem(idx, 'cost_price', parseFloat(e.target.value) || 0)}
-                              className="w-16 px-2 py-1 rounded-lg border border-slate-200 font-mono text-xs text-slate-600 outline-hidden"
+                              min="0"
+                              value={item.cost_price ?? ''}
+                              placeholder="0.00"
+                              onChange={(e) => handleUpdateItem(idx, 'cost_price', e.target.value)}
+                              className="w-20 px-2 py-1 rounded-lg border border-slate-200 font-mono text-xs text-slate-600 outline-hidden focus:border-indigo-500 bg-white"
                             />
                           </td>
 
@@ -850,15 +1142,17 @@ RVS MULTI-SPECIALTY HOSPITAL • OPD PRESCRIPTION SLIP
                             <input
                               type="number"
                               step="0.5"
-                              value={item.mrp}
-                              onChange={(e) => handleUpdateItem(idx, 'mrp', parseFloat(e.target.value) || 0)}
-                              className="w-16 px-2 py-1 rounded-lg border border-slate-200 font-mono text-xs font-bold text-slate-900 outline-hidden"
+                              min="0"
+                              value={item.mrp ?? ''}
+                              placeholder="0.00"
+                              onChange={(e) => handleUpdateItem(idx, 'mrp', e.target.value)}
+                              className="w-20 px-2 py-1 rounded-lg border border-slate-200 font-mono text-xs font-bold text-slate-900 outline-hidden focus:border-indigo-500 bg-white"
                             />
                           </td>
 
                           {/* Rack */}
                           <td className="px-3 py-2 font-mono text-[10px] text-slate-500 whitespace-nowrap">
-                            {item.shelf_location}
+                            {item.shelf_location || 'Rack A-01'}
                           </td>
 
                           {/* Delete */}

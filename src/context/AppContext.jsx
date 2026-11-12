@@ -680,18 +680,22 @@ export const AppProvider = ({ children }) => {
       default_discount_percent: parseFloat(medData.default_discount_percent) || 0
     }
 
-    const defaultExp = new Date()
-    defaultExp.setFullYear(defaultExp.getFullYear() + 2)
-    const defaultExpStr = `${defaultExp.getFullYear()}-${String(defaultExp.getMonth() + 1).padStart(2, '0')}-${String(defaultExp.getDate()).padStart(2, '0')}`
-
     let newBatch = null
-    if (batchData) {
+    const hasBatchDetails = batchData && (
+      (batchData.batch_number && batchData.batch_number.trim()) ||
+      (batchData.expiry_date && batchData.expiry_date.trim()) ||
+      parseInt(batchData.current_stock, 10) > 0 ||
+      parseFloat(batchData.mrp) > 0 ||
+      parseFloat(batchData.cost_price) > 0
+    )
+
+    if (hasBatchDetails) {
       newBatch = {
         id: generateUUID(),
         medicine_id: medId,
         store: targetStore,
-        batch_number: (batchData.batch_number || '').trim() || `B-${Math.floor(1000 + Math.random() * 9000)}`,
-        expiry_date: batchData.expiry_date || defaultExpStr,
+        batch_number: (batchData.batch_number || '').trim(),
+        expiry_date: (batchData.expiry_date || '').trim(),
         cost_price: parseFloat(batchData.cost_price) || 0,
         mrp: parseFloat(batchData.mrp) || parseFloat(batchData.selling_price) || 0,
         selling_price: parseFloat(batchData.selling_price) || parseFloat(batchData.mrp) || 0,
